@@ -1,6 +1,6 @@
-# Portfolio & Balance Sheet
+# Zenith
 
-App personale (utente singolo) per tracciare **patrimonio netto** e **portafoglio titoli**, in sostituzione di un Excel storico. Gira su **Windows** (desktop) e **Android** dalla stessa codebase.
+App personale (utente singolo) per tracciare **patrimonio netto** e **portafoglio titoli**, in sostituzione di un Excel storico. Gira su **Windows** (desktop) e **Android** dalla stessa codebase. Nome in codice: **Zenith**.
 
 Questo repository contiene, per ora, **solo la documentazione** che guida lo sviluppo con Claude Code. Il codice verrà generato a fasi.
 

@@ -1,4 +1,4 @@
-# CLAUDE.md — App "Portfolio & Balance Sheet"
+# CLAUDE.md — Zenith (Portfolio & Balance Sheet)
 
 > Questo file viene letto automaticamente da Claude Code a ogni sessione.
 > È la "costituzione" del progetto: in caso di conflitto con un prompt estemporaneo, **prevale questo file**.
