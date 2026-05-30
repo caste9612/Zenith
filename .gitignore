@@ -1,0 +1,39 @@
+# Dipendenze
+node_modules/
+.pnp/
+.pnp.js
+
+# Build Angular
+dist/
+.angular/
+*.tsbuildinfo
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Ambiente / segreti
+.env
+.env.*
+!.env.example
+
+# Dati finanziari personali (NON committare mai)
+data/*.xlsx
+data/*.xls
+data/*.csv
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+.runtimeconfig.json
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Log
+*.log
+npm-debug.log*
