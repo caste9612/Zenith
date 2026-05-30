@@ -31,6 +31,8 @@ export interface Instrument {
 
   // --- cache quotazione automatica ---
   lastPrice?: number;
+  /** Chiusura del giorno precedente (per la variazione a 1 giorno). */
+  prevClose?: number;
   lastPriceAt?: Date;
 
   // --- prezzo manuale (BTP/bond e simili) ---

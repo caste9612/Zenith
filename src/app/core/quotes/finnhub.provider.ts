@@ -28,11 +28,12 @@ export class FinnhubProvider implements QuoteProvider {
       `&token=${environment.finnhubApiKey}`;
     const res = await platformFetch(url);
     if (!res.ok) return null;
-    const data = (await res.json()) as { c?: number };
+    const data = (await res.json()) as { c?: number; pc?: number };
     if (typeof data.c !== 'number' || data.c === 0) return null;
     return {
       symbol: instrument.symbol,
       price: data.c,
+      prevClose: typeof data.pc === 'number' && data.pc > 0 ? data.pc : undefined,
       currency: instrument.currency,
       at: new Date(),
     };
