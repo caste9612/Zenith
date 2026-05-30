@@ -1,4 +1,9 @@
-import { firebaseConfig, finnhubApiKey, firebaseConfigured } from './firebase-config';
+import {
+  alphaVantageApiKey,
+  firebaseConfig,
+  finnhubApiKey,
+  firebaseConfigured,
+} from './firebase-config';
 
 /**
  * Configurazione applicativa. I valori sensibili/di progetto Firebase arrivano da
@@ -14,4 +19,5 @@ export const environment = {
   /** true se Firebase è configurato (.env compilato). */
   firebaseConfigured,
   finnhubApiKey,
+  alphaVantageApiKey,
 } as const;

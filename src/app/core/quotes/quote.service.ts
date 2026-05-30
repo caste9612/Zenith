@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { InstrumentsRepository } from '../data';
 import { Instrument } from '../models';
+import { AlphaVantageProvider } from './alphavantage.provider';
 import { FinnhubProvider } from './finnhub.provider';
 import { FxProvider } from './fx.provider';
 import { QuoteProvider } from './quote-provider';
@@ -21,7 +22,10 @@ export interface RefreshResult {
 export class QuoteService {
   private readonly instrumentsRepo = inject(InstrumentsRepository);
   private readonly fx = inject(FxProvider);
-  private readonly providers: QuoteProvider[] = [inject(FinnhubProvider)];
+  private readonly providers: QuoteProvider[] = [
+    inject(FinnhubProvider),
+    inject(AlphaVantageProvider),
+  ];
 
   providerFor(instrument: Instrument): QuoteProvider | undefined {
     return this.providers.find((p) => p.supports(instrument));

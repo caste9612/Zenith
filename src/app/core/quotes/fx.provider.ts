@@ -19,7 +19,9 @@ export class FxProvider {
 
     // 1) Frankfurter (BCE)
     try {
-      const res = await platformFetch(`https://api.frankfurter.dev/v1/latest?base=${f}&symbols=${t}`);
+      const res = await platformFetch(
+        `https://api.frankfurter.dev/v1/latest?base=${f}&symbols=${t}`,
+      );
       if (res.ok) {
         const data = (await res.json()) as { rates?: Record<string, number> };
         const r = data.rates?.[t];

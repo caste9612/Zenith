@@ -49,6 +49,7 @@ const firebaseConfig = {
 };
 
 const finnhubApiKey = env.FINNHUB_API_KEY ?? '';
+const alphaVantageApiKey = env.ALPHAVANTAGE_API_KEY ?? '';
 const firebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId,
 );
@@ -61,6 +62,8 @@ const body = `${banner}
 export const firebaseConfig = ${JSON.stringify(firebaseConfig, null, 2)} as const;
 
 export const finnhubApiKey = ${JSON.stringify(finnhubApiKey)};
+
+export const alphaVantageApiKey = ${JSON.stringify(alphaVantageApiKey)};
 
 /** true solo se i campi Firebase essenziali (apiKey, projectId, appId) sono presenti in .env. */
 export const firebaseConfigured = ${firebaseConfigured};

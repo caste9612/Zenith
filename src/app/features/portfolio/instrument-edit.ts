@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { InstrumentsRepository } from '../../core/data';
-import { Instrument } from '../../core/models';
+import { Instrument, QuoteProviderId } from '../../core/models';
 
-const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
+const CURRENCIES = ['EUR', 'USD', 'GBP', 'GBX', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
+type Source = 'finnhub' | 'alphavantage' | 'manual';
 
 @Component({
   selector: 'app-instrument-edit',
@@ -38,10 +39,17 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
             <div class="segmented">
               <button
                 type="button"
-                [class.active]="source() === 'auto'"
-                (click)="source.set('auto')"
+                [class.active]="source() === 'finnhub'"
+                (click)="source.set('finnhub')"
               >
-                Auto (Finnhub)
+                Finnhub (USA)
+              </button>
+              <button
+                type="button"
+                [class.active]="source() === 'alphavantage'"
+                (click)="source.set('alphavantage')"
+              >
+                Alpha Vantage (Europa)
               </button>
               <button
                 type="button"
@@ -53,16 +61,7 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
             </div>
           </div>
 
-          @if (source() === 'auto') {
-            <label class="field">
-              <span class="label">Simbolo Finnhub</span>
-              <input [value]="symbol()" (input)="symbol.set(val($event))" placeholder="Es. LBTYA" />
-              <span class="muted small">
-                Free tier: solo mercati USA. I titoli europei spesso non sono disponibili → usa
-                "Manuale".
-              </span>
-            </label>
-          } @else {
+          @if (source() === 'manual') {
             <label class="field">
               <span class="label">Prezzo attuale (€)</span>
               <input
@@ -73,6 +72,25 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
                 (input)="manualPrice.set(num($event))"
               />
               <span class="muted small">Aggiornalo quando vuoi (come facevi nell'Excel).</span>
+            </label>
+          } @else {
+            <label class="field">
+              <span class="label"
+                >Simbolo {{ source() === 'alphavantage' ? 'Alpha Vantage' : 'Finnhub' }}</span
+              >
+              <input
+                [value]="symbol()"
+                (input)="symbol.set(val($event))"
+                [placeholder]="source() === 'alphavantage' ? 'Es. FLOW.AMS' : 'Es. LBTYA'"
+              />
+              @if (source() === 'alphavantage') {
+                <span class="muted small">
+                  Mercati internazionali (Euronext, Londra…), dati EOD. Suffisso mercato: .AMS
+                  Amsterdam, .LON Londra, .PAR Parigi.
+                </span>
+              } @else {
+                <span class="muted small">Finnhub free: solo mercati USA.</span>
+              }
             </label>
           }
         </div>
@@ -107,7 +125,9 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
         font-size: var(--fs-small);
       }
       .segmented {
-        display: inline-flex;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
         background: var(--surface-2);
         border-radius: var(--radius);
         padding: 3px;
@@ -119,6 +139,7 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
         padding: var(--space-2) var(--space-3);
         border-radius: calc(var(--radius) - 3px);
         font-weight: var(--fw-medium);
+        font-size: var(--fs-label);
       }
       .segmented button.active {
         background: var(--surface);
@@ -146,7 +167,7 @@ export class InstrumentEditPage {
   protected readonly symbol = signal('');
   protected readonly name = signal('');
   protected readonly currency = signal('EUR');
-  protected readonly source = signal<'auto' | 'manual'>('manual');
+  protected readonly source = signal<Source>('manual');
   protected readonly manualPrice = signal<number | null>(null);
   protected readonly busy = signal(false);
   private original: Instrument | null = null;
@@ -162,7 +183,13 @@ export class InstrumentEditPage {
       this.symbol.set(ins.symbol);
       this.name.set(ins.name);
       this.currency.set(ins.currency || 'EUR');
-      this.source.set(ins.provider === 'manual' ? 'manual' : 'auto');
+      this.source.set(
+        ins.provider === 'manual'
+          ? 'manual'
+          : ins.provider === 'alphavantage'
+            ? 'alphavantage'
+            : 'finnhub',
+      );
       this.manualPrice.set(ins.manualPrice ?? ins.lastPrice ?? null);
     }
     this.loading.set(false);
@@ -180,20 +207,20 @@ export class InstrumentEditPage {
     if (this.busy()) return;
     this.busy.set(true);
     try {
-      const manual = this.source() === 'manual';
+      const provider: QuoteProviderId = this.source();
       const inst: Instrument = {
         ...(this.original ?? { assetType: 'equity' }),
         id: this.id,
         symbol: this.symbol().trim().toUpperCase() || this.id,
         name: this.name().trim() || this.symbol(),
         currency: this.currency().trim().toUpperCase() || 'EUR',
-        provider: manual ? 'manual' : 'finnhub',
+        provider,
         assetType: this.original?.assetType ?? 'equity',
       };
-      if (manual) {
+      if (provider === 'manual') {
         const p = this.manualPrice() ?? 0;
         inst.manualPrice = p;
-        inst.lastPrice = p; // così la valorizzazione usa subito il prezzo manuale
+        inst.lastPrice = p; // la valorizzazione usa subito il prezzo manuale
         inst.lastPriceAt = new Date();
       }
       await this.repo.upsert(inst);
