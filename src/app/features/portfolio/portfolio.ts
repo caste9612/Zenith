@@ -130,7 +130,7 @@ interface Variation {
 
         <div class="stack-sm">
           @for (r of rows(); track r.id) {
-            <div class="card pos">
+            <a class="card pos" [routerLink]="['/portfolio/instrument', r.symbol]">
               <div class="pos-main">
                 <div class="sym">{{ r.symbol }}</div>
                 <div class="muted small">{{ r.qty }} × PMC {{ eur2(r.avgCost) }}</div>
@@ -141,7 +141,7 @@ interface Variation {
                   {{ signed(r.pl) }} · {{ pct(r.plPct) }}
                 </div>
               </div>
-            </div>
+            </a>
           }
         </div>
 
@@ -264,6 +264,12 @@ interface Variation {
         justify-content: space-between;
         gap: var(--space-3);
         padding: var(--space-3) var(--space-4);
+        color: inherit;
+        text-decoration: none;
+        transition: background var(--t-fast);
+      }
+      .pos:hover {
+        background: var(--surface-hover);
       }
       .sym {
         font-weight: var(--fw-semibold);
@@ -328,10 +334,8 @@ export class PortfolioPage {
     return this.holdings()
       .map((h) => {
         const ins = byId.get(h.instrumentId);
-        const price =
-          h.priceMode === 'manual'
-            ? (h.manualPrice ?? h.avgCost)
-            : (ins?.lastPrice ?? ins?.manualPrice ?? h.avgCost);
+        // prezzo corrente in EUR: lastPrice (auto convertito o manuale), poi manualPrice, poi costo
+        const price = ins?.lastPrice ?? ins?.manualPrice ?? h.avgCost;
         const value = h.quantity * price;
         const cost = h.quantity * h.avgCost;
         const pl = value - cost;

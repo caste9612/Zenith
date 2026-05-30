@@ -34,6 +34,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/portfolio/movements').then((m) => m.MovementsPage),
   },
   {
+    path: 'portfolio/instrument/:id',
+    title: 'Strumento · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/portfolio/instrument-edit').then((m) => m.InstrumentEditPage),
+  },
+  {
     path: 'snapshots',
     title: 'Snapshot · Zenith',
     canActivate: [authGuard],
