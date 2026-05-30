@@ -1,49 +1,71 @@
 # Zenith
 
-App personale (utente singolo) per tracciare **patrimonio netto** e **portafoglio titoli**, in sostituzione di un Excel storico. Gira su **Windows** (desktop) e **Android** dalla stessa codebase. Nome in codice: **Zenith**.
-
-Questo repository contiene, per ora, **solo la documentazione** che guida lo sviluppo con Claude Code. Il codice verrà generato a fasi.
+App personale (utente singolo) per tracciare **patrimonio netto** e **portafoglio titoli**, in sostituzione di un Excel storico. Gira su **Windows** (desktop) e **Android** dalla stessa codebase, e come **web app/PWA**.
 
 ## Stack
-- **Frontend:** Angular (LTS, standalone components, Signals)
-- **Backend:** Firebase — Firestore + Authentication (piano gratuito Spark)
-- **Packaging:** Tauri 2 (eseguibile Windows + APK Android)
-- **Quotazioni:** Finnhub (azioni/ETF) + fonte FX gratuita (EUR/USD); BTP/bond a inserimento manuale
+- **Frontend:** Angular 20 (standalone, **Signals**, change detection **zoneless**, OnPush)
+- **Backend:** Firebase — Firestore + Authentication (piano gratuito **Spark**), offline abilitato, letture realtime
+- **Packaging:** Tauri 2 (eseguibile Windows + APK Android) · plugin HTTP per le API di mercato (niente CORS)
+- **Quotazioni:** Finnhub (azioni/ETF) + FX gratuita (Frankfurter); BTP/bond a inserimento manuale
 
-## Prerequisiti (da installare sulla macchina di sviluppo)
-- Node.js (LTS) e npm
-- Angular CLI
-- Rust + toolchain Tauri 2 (per il build desktop/mobile) — vedi requisiti su tauri.app
-- Un progetto **Firebase** gratuito con Firestore e Authentication (email/password) abilitati
-- Una **API key Finnhub** gratuita
-- **Claude Code** installato (`npm i -g @anthropic-ai/claude-code`)
+> Performance e reattività sono un requisito di prima classe: vedi `docs/07-performance.md`.
 
-## Come iniziare con Claude Code
-1. Clona il repo e aprilo in Claude Code dalla cartella radice.
-2. Copia `.env.example` in `.env` e compila i valori (config Firebase + API key). **Non** committare `.env`.
-3. Metti il tuo Excel storico in `data/` con nome `patrimonio.xlsx` (resta fuori da git).
-4. Avvia Claude Code: leggerà automaticamente `CLAUDE.md` e i documenti in `docs/`.
-5. Chiedi a Claude Code di partire dalla **Fase 0** (vedi `docs/03-roadmap.md`): leggerà l'Excel, proporrà lo schema dati e attenderà la tua conferma prima di scrivere codice.
+## Requisiti
+- Node.js LTS + npm
+- Un progetto **Firebase** gratuito (Firestore + Auth email/password)
+- *(opzionale)* API key **Finnhub** per le quotazioni
+- *(solo per build desktop/mobile)* Rust + toolchain Tauri 2
 
-## Struttura del repository
+## Avvio rapido
+```bash
+npm install
+cp .env.example .env          # poi compila i valori (config Firebase)
+npm start                     # http://localhost:4200
+```
+La config Firebase **non** sta nel repo: va in `.env` (gitignorato) e viene iniettata a build-time
+in `src/environments/firebase-config.ts` (rigenerato a ogni `start`/`build`).
+
+## Comandi
+| Comando | Cosa fa |
+|---|---|
+| `npm start` | Dev server (genera la config + `ng serve`) |
+| `npm run build` | Build di produzione in `dist/zenith/browser` |
+| `npm test` | Unit test (Karma/Jasmine) |
+| `npm run import:parse` | Legge l'Excel storico → `data/seed.json` (locale, gitignorato) |
+| `npm run import:seed` | Carica `seed.json` su Firestore (login con `SEED_EMAIL/SEED_PASSWORD`) |
+| `npm run deploy:rules` | Deploy regole + indici Firestore |
+| `npm run deploy:hosting` | Build + deploy su Firebase Hosting |
+| `npm run tauri:dev` / `tauri:build` | App desktop/Android (richiede Rust) |
+
+## Import dello storico
+1. Metti il tuo Excel in root (`Balance Sheet.xlsx`) o in `data/` — resta **fuori da git**.
+2. `npm run import:parse` → genera `data/seed.json` e stampa un riepilogo dei dati estratti.
+3. `npm run import:seed` → crea l'utente (se serve) e scrive i dati sotto `users/{uid}/…`.
+
+## Struttura
 ```
 .
-├── CLAUDE.md                 # istruzioni lette automaticamente da Claude Code
-├── README.md                 # questo file
-├── .gitignore
-├── .env.example              # placeholder per config Firebase e API key
-├── docs/                     # documentazione di progetto (specifiche)
-│   ├── 00-build-prompt.md
-│   ├── 01-architecture.md
-│   ├── 02-data-model.md
-│   ├── 03-roadmap.md
-│   ├── 04-design-guidelines.md
-│   └── 05-firestore-security-rules.md
-└── data/                     # qui va l'Excel (gitignorato)
-    └── README.md
+├── CLAUDE.md                 # "costituzione" del progetto (letta da Claude Code)
+├── docs/                     # 00..07 — specifiche, architettura, roadmap, design, performance…
+├── data/                     # Excel + seed.json (gitignorati); solo README versionato
+├── scripts/
+│   ├── generate-firebase-config.mjs   # .env → src/environments/firebase-config.ts
+│   └── import/                         # parse-excel.mjs, seed-firestore.mjs
+├── src/
+│   ├── environments/         # environment.ts (+ firebase-config.ts generato)
+│   ├── styles/               # design system: _tokens, _base, _utilities
+│   └── app/
+│       ├── core/             # auth, data (Firestore), firebase, models, money, platform, quotes, theme
+│       └── features/         # dashboard, portfolio, snapshots, settings, auth
+├── src-tauri/                # guscio Tauri (desktop/Android)
+├── firebase.json · firestore.rules · firestore.indexes.json · .firebaserc
+└── angular.json · tsconfig*.json · package.json
 ```
 
-## Principi guida
-- Sviluppo **incrementale**: una fase alla volta, con conferma esplicita tra una e l'altra.
-- **Gratuito al 100%**: nessun servizio a pagamento, niente Cloud Functions.
-- **Privacy**: i dati finanziari (Excel, `.env`) non entrano mai in git.
+## Privacy
+- I **dati finanziari** (Excel, `data/*.json`) e i **segreti** (`.env`) non entrano mai in git.
+- Le security rules isolano i dati per utente (`users/{uid}`).
+
+## Principi
+- Sviluppo **incrementale** a fasi, con conferma tra una e l'altra (vedi `docs/03-roadmap.md`).
+- **Gratuito al 100%**: piano Spark, nessuna Cloud Function, logica lato client.

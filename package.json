@@ -1,0 +1,64 @@
+{
+  "name": "zenith",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "npm run config:gen && ng serve",
+    "build": "npm run config:gen && ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "config:gen": "node scripts/generate-firebase-config.mjs",
+    "import:parse": "node scripts/import/parse-excel.mjs",
+    "import:seed": "node scripts/import/seed-firestore.mjs",
+    "deploy": "npm run build && firebase deploy",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
+    "tauri": "tauri",
+    "tauri:dev": "npm run config:gen && tauri dev",
+    "tauri:build": "npm run config:gen && tauri build"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/router": "^20.3.0",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-http": "^2.5.9",
+    "firebase": "^12.14.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^20.3.3",
+    "@angular/cli": "^20.3.3",
+    "@angular/compiler-cli": "^20.3.0",
+    "@tauri-apps/cli": "^2.11.2",
+    "@types/jasmine": "~5.1.0",
+    "jasmine-core": "~5.9.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "prettier": "^3.8.3",
+    "typescript": "~5.9.2",
+    "xlsx": "^0.18.5"
+  }
+}

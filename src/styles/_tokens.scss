@@ -1,0 +1,110 @@
+// Design tokens di Zenith — esposti come CSS custom properties (quindi tematizzabili a runtime).
+// Palette sobria, un solo colore d'accento, dark/light. Vedi docs/04-design-guidelines.md.
+
+:root {
+  // Tipografia
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-num: 'Inter', system-ui, sans-serif;
+
+  --fs-display: 2.25rem; // patrimonio netto in evidenza
+  --fs-h1: 1.5rem;
+  --fs-h2: 1.175rem;
+  --fs-body: 0.9375rem;
+  --fs-label: 0.8125rem;
+  --fs-small: 0.75rem;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --lh-tight: 1.15;
+  --lh-normal: 1.5;
+
+  // Spaziatura (scala 4/8/12/16/24/32/48/64)
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  // Raggi
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  // Layout
+  --sidebar-w: 248px;
+  --content-max: 1100px;
+
+  // Transizioni
+  --t-fast: 120ms ease;
+  --t: 200ms ease;
+}
+
+// --- Tema chiaro (default) ---
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --surface-hover: #f1f3f7;
+
+  --text: #161a1f;
+  --text-secondary: #5b6571;
+  --text-muted: #8a93a0;
+
+  --border: #e4e7ec;
+  --border-strong: #d3d8e0;
+
+  --accent: #3b5bdb;
+  --accent-hover: #314fc4;
+  --accent-soft: #e8edfb;
+  --on-accent: #ffffff;
+
+  --positive: #1f9d57;
+  --positive-soft: #e4f6ec;
+  --negative: #e03131;
+  --negative-soft: #fcebea;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow: 0 4px 16px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12);
+}
+
+// --- Tema scuro ---
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0e1116;
+  --surface: #161a21;
+  --surface-2: #1d222b;
+  --surface-hover: #20262f;
+
+  --text: #e8eaed;
+  --text-secondary: #a4adba;
+  --text-muted: #727d8c;
+
+  --border: #262c36;
+  --border-strong: #323a46;
+
+  --accent: #748ffc;
+  --accent-hover: #8ba1ff;
+  --accent-soft: #1b2540;
+  --on-accent: #0e1116;
+
+  --positive: #51cf85;
+  --positive-soft: #11261b;
+  --negative: #ff6b6b;
+  --negative-soft: #2a1718;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+}

@@ -31,6 +31,9 @@ Leggi questi documenti come parte del contesto:
 - @docs/04-design-guidelines.md — principi di design e UX
 - @docs/05-firestore-security-rules.md — regole di sicurezza Firestore
 - @docs/06-glossario.md — glossario del dominio (linguaggio comune)
+- @docs/07-performance.md — strategia di performance e reattività (zoneless, Signals, offline, lazy)
 
 ## Stack (sintesi)
-Angular (LTS, standalone, Signals) · Firebase (Firestore + Auth email/password, offline abilitato) · Tauri 2 per impacchettare Windows + Android · plugin HTTP di Tauri per le API di mercato (evita la CORS del browser).
+Angular (LTS, standalone, Signals, **change detection zoneless + OnPush**) · Firebase (Firestore + Auth email/password, offline abilitato; letture realtime → Signal) · Tauri 2 per impacchettare Windows + Android · plugin HTTP di Tauri per le API di mercato (evita la CORS del browser).
+
+> Performance e reattività sono un requisito di prima classe: vedi `docs/07-performance.md` per le regole vincolanti.

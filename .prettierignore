@@ -1,0 +1,21 @@
+# Generati / dipendenze / build
+node_modules
+dist
+.angular
+coverage
+.firebase
+
+# Tauri generati / binari
+src-tauri/gen
+src-tauri/target
+src-tauri/icons
+
+# Config generata da .env
+src/environments/firebase-config.ts
+
+# Dati personali
+data
+
+# Lockfile e markdown (formattazione gestita a mano)
+package-lock.json
+*.md

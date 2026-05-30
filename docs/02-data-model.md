@@ -1,6 +1,14 @@
-# 02 — Modello dati (provvisorio)
+# 02 — Modello dati
 
-> ⚠️ Questo è un punto di partenza. Lo schema **definitivo va derivato dall'Excel** in Fase 0 e confermato dal committente.
+> ⚠️ Punto di partenza derivato dall'Excel in Fase 0, ora **implementato** (vedi nota sotto).
+
+## Stato (implementato)
+Schema derivato dal foglio **Amorini** (vista **familiare**) e implementato: i tipi sono in
+`src/app/core/models/`, i repository in `src/app/core/data/`. Le 10 voci (`accounts`) hanno
+`owner` (`antonio` | `michela` | `shared`) e `assetClass`: Azionario, Crypto, F. Pensione (×2),
+Cash, Riserva (×2), Risparmi Michela, F. Emergenza, Cassa Famiglia. Lo storico è in `snapshots`
+(uno per mese), il portafoglio in `holdings` + `instruments`. Le sezioni seguenti restano la
+descrizione di riferimento del modello.
 
 ## Principio: struttura a livelli
 - **Balance sheet** (livello alto): il patrimonio netto come somma di asset meno passività, con **snapshot mensili** manuali → lo "storico".

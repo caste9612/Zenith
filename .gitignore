@@ -16,11 +16,18 @@ src-tauri/gen/
 .env
 .env.*
 !.env.example
+# Config Firebase generata da .env (ricreata a ogni build)
+src/environments/firebase-config.ts
 
 # Dati finanziari personali (NON committare mai)
 data/*.xlsx
 data/*.xls
 data/*.csv
+# ...e gli Excel/dati ovunque (l'Excel storico può stare anche nella root, es. "Balance Sheet.xlsx")
+*.xlsx
+*.xls
+# Seed/estrazioni dati personali generati dall'import
+data/*.json
 
 # Firebase
 .firebase/
@@ -33,6 +40,9 @@ firestore-debug.log
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Claude Code (impostazioni locali personali; launch.json resta versionato)
+.claude/settings.local.json
 
 # Log
 *.log
