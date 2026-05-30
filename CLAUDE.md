@@ -30,6 +30,7 @@ Leggi questi documenti come parte del contesto:
 - @docs/03-roadmap.md — piano a fasi con stop-gate
 - @docs/04-design-guidelines.md — principi di design e UX
 - @docs/05-firestore-security-rules.md — regole di sicurezza Firestore
+- @docs/06-glossario.md — glossario del dominio (linguaggio comune)
 
 ## Stack (sintesi)
 Angular (LTS, standalone, Signals) · Firebase (Firestore + Auth email/password, offline abilitato) · Tauri 2 per impacchettare Windows + Android · plugin HTTP di Tauri per le API di mercato (evita la CORS del browser).
