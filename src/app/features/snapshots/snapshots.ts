@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { SnapshotsRepository } from '../../core/data';
 import { formatEur, formatSignedEur } from '../../core/money/format';
 
@@ -6,6 +7,7 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
 
 @Component({
   selector: 'app-snapshots',
+  imports: [RouterLink],
   template: `
     <section class="page">
       <header class="page-header row row-between">
@@ -13,15 +15,13 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
           <h1>Snapshot</h1>
           <p class="subtitle">Lo storico mensile del patrimonio.</p>
         </div>
-        <button class="btn btn-primary" type="button" disabled title="Disponibile a breve">
-          + Nuovo
-        </button>
+        <a class="btn btn-primary" routerLink="/snapshots/new">+ Nuovo</a>
       </header>
 
       @if (rows().length) {
         <div class="stack-sm">
           @for (r of rows(); track r.id) {
-            <div class="card snap">
+            <a class="card snap" [routerLink]="['/snapshots', r.id]">
               <span class="month">{{ r.label }}</span>
               <span class="spacer"></span>
               @if (r.delta !== null) {
@@ -30,7 +30,20 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
                 </span>
               }
               <span class="num value">{{ eur(r.netWorth) }}</span>
-            </div>
+              <svg
+                class="chev"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </a>
           }
         </div>
       } @else {
@@ -49,6 +62,15 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
         align-items: center;
         gap: var(--space-3);
         padding: var(--space-3) var(--space-4);
+        color: inherit;
+        text-decoration: none;
+        transition: background var(--t-fast);
+      }
+      .snap:hover {
+        background: var(--surface-hover);
+      }
+      .chev {
+        color: var(--text-muted);
       }
       .month {
         text-transform: capitalize;

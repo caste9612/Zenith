@@ -27,6 +27,20 @@ export const routes: Routes = [
     loadComponent: () => import('./features/snapshots/snapshots').then((m) => m.SnapshotsPage),
   },
   {
+    path: 'snapshots/new',
+    title: 'Nuovo snapshot · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/snapshots/snapshot-editor').then((m) => m.SnapshotEditorPage),
+  },
+  {
+    path: 'snapshots/:id',
+    title: 'Modifica snapshot · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/snapshots/snapshot-editor').then((m) => m.SnapshotEditorPage),
+  },
+  {
     path: 'settings',
     title: 'Impostazioni · Zenith',
     canActivate: [authGuard],

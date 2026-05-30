@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { HoldingsRepository, InstrumentsRepository } from '../../core/data';
-import { formatEur, formatPercent } from '../../core/money/format';
+import { formatEur, formatPercent, formatSignedEur } from '../../core/money/format';
 import { Instrument } from '../../core/models';
 
 @Component({
@@ -28,12 +28,12 @@ import { Instrument } from '../../core/models';
             <div class="card pos">
               <div class="pos-main">
                 <div class="sym">{{ r.symbol }}</div>
-                <div class="muted small">{{ r.qty }} × PMC {{ eur(r.avgCost) }}</div>
+                <div class="muted small">{{ r.qty }} × PMC {{ eur2(r.avgCost) }}</div>
               </div>
               <div class="pos-vals">
                 <div class="num value">{{ eur(r.value) }}</div>
                 <div class="num small" [class.gain]="r.pl > 0" [class.loss]="r.pl < 0">
-                  {{ pct(r.plPct) }}
+                  {{ signed(r.pl) }} · {{ pct(r.plPct) }}
                 </div>
               </div>
             </div>
@@ -133,5 +133,11 @@ export class PortfolioPage {
   }
   protected pct(fraction: number): string {
     return formatPercent(fraction);
+  }
+  protected eur2(v: number): string {
+    return formatEur(v, { cents: true });
+  }
+  protected signed(v: number): string {
+    return formatSignedEur(v);
   }
 }
