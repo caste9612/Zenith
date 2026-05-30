@@ -21,6 +21,19 @@ export const routes: Routes = [
     loadComponent: () => import('./features/portfolio/portfolio').then((m) => m.PortfolioPage),
   },
   {
+    path: 'portfolio/transaction',
+    title: 'Nuova operazione · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/portfolio/transaction-form').then((m) => m.TransactionFormPage),
+  },
+  {
+    path: 'portfolio/movimenti',
+    title: 'Movimenti · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/portfolio/movements').then((m) => m.MovementsPage),
+  },
+  {
     path: 'snapshots',
     title: 'Snapshot · Zenith',
     canActivate: [authGuard],

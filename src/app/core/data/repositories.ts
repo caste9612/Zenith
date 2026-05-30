@@ -59,6 +59,10 @@ export class TransactionsRepository extends BaseRepository<Transaction> {
   listByDate(): Promise<Transaction[]> {
     return this.list(orderBy('date', 'desc'));
   }
+  /** Movimenti in tempo reale, dal più recente (chiamare in un contesto di injection). */
+  connectByDate(): Signal<Transaction[]> {
+    return this.connect(orderBy('date', 'desc'));
+  }
 }
 
 /** Preferenze: documento singolo in users/{uid}/settings/app. */
