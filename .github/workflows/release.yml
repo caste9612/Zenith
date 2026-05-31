@@ -1,0 +1,71 @@
+name: release-windows
+
+# Builds the Windows installer (.msi/.exe) with Tauri and publishes it to a GitHub Release.
+# Trigger: push a tag like `v0.1.0`, or run manually from the Actions tab (workflow_dispatch).
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag/release name (es. v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write # serve a tauri-action per creare la Release e caricare gli installer
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # La config Firebase + le chiavi quotazioni non sono nel repo: le ricostruiamo da
+      # GitHub Secrets (così l'eseguibile sa connettersi a Firebase e alle API di mercato).
+      - name: Generate .env from secrets
+        shell: bash
+        run: |
+          cat > .env <<EOF
+          FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
+          FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
+          ALPHAVANTAGE_API_KEY=${{ secrets.ALPHAVANTAGE_API_KEY }}
+          EOF
+
+      - name: Build app + publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: 'Zenith ${{ github.event.inputs.tag || github.ref_name }}'
+          releaseBody: 'Installer Windows di Zenith. Scarica il file .msi o il setup .exe qui sotto.'
+          releaseDraft: false
+          prerelease: false
