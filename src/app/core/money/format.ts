@@ -32,6 +32,12 @@ const pct = new Intl.NumberFormat('it-IT', {
   signDisplay: 'exceptZero',
 });
 
+const pctPlain = new Intl.NumberFormat('it-IT', {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
 /** Importo in EUR. Default senza decimali (cifre da bilancio); `cents: true` per i centesimi. */
 export function formatEur(value: number, opts?: { cents?: boolean }): string {
   return (opts?.cents ? eur2 : eur0).format(value);
@@ -45,6 +51,11 @@ export function formatSignedEur(value: number): string {
 /** Percentuale con segno; attende una frazione (0.12 → "+12,0%"). */
 export function formatPercent(fraction: number): string {
   return pct.format(fraction);
+}
+
+/** Percentuale senza segno forzato; attende una frazione (0.08 → "8,0%"). */
+export function formatPercentPlain(fraction: number): string {
+  return pctPlain.format(fraction);
 }
 
 /** Classe CSS per gain/loss/neutro, da applicare ai numeri. */

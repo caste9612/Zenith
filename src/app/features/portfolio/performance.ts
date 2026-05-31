@@ -1,10 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PortfolioHistoryRepository } from '../../core/data';
-import { formatEur, formatPercent, formatSignedEur } from '../../core/money/format';
+import {
+  formatEur,
+  formatPercent,
+  formatPercentPlain,
+  formatSignedEur,
+} from '../../core/money/format';
+import { computeMetrics, RISK_FREE_ANNUAL } from '../../core/portfolio/metrics';
 import { LineSeries, MultiLineChartComponent } from '../../shared/multi-line-chart';
 
 const periodFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeric' });
+const ratioFmt = new Intl.NumberFormat('it-IT', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 const COLORS = {
   invested: '#8a93a6',
@@ -66,6 +76,42 @@ const COLORS = {
           </div>
         </div>
 
+        @if (metrics().months >= 2) {
+          <h2 class="section-title">Indicatori</h2>
+          <div class="grid four">
+            <div class="card mini">
+              <span class="label">Rendimento annuo</span>
+              <span
+                class="num value"
+                [class.gain]="metrics().cagr > 0"
+                [class.loss]="metrics().cagr < 0"
+                >{{ pct(metrics().cagr) }}</span
+              >
+              <span class="muted small">CAGR composto</span>
+            </div>
+            <div class="card mini">
+              <span class="label">Volatilità</span>
+              <span class="num value">{{ pctPlain(metrics().volatility) }}</span>
+              <span class="muted small">annualizzata</span>
+            </div>
+            <div class="card mini">
+              <span class="label">Sharpe</span>
+              <span
+                class="num value"
+                [class.gain]="metrics().sharpe > 0"
+                [class.loss]="metrics().sharpe < 0"
+                >{{ ratio(metrics().sharpe) }}</span
+              >
+              <span class="muted small">risk-free {{ pctPlain(riskFree) }}</span>
+            </div>
+            <div class="card mini">
+              <span class="label">Max drawdown</span>
+              <span class="num value loss">−{{ pctPlain(metrics().maxDrawdown) }}</span>
+              <span class="muted small">caduta dal picco</span>
+            </div>
+          </div>
+        }
+
         <div class="card">
           <span class="label">Portafoglio vs benchmark</span>
           <app-multi-line-chart [labels]="labels()" [series]="series()" />
@@ -119,6 +165,10 @@ const COLORS = {
       .three {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         margin: var(--space-4) 0;
+      }
+      .four {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        margin: var(--space-3) 0 var(--space-4);
       }
       .mini {
         display: flex;
@@ -199,6 +249,10 @@ export class PerformancePage {
     this.invested() ? this.totalReturn() / this.invested() : 0,
   );
 
+  /** Indicatori (CAGR, volatilità, Sharpe, max drawdown) dai rendimenti mensili time-weighted. */
+  protected readonly metrics = computed(() => computeMetrics(this.points(), RISK_FREE_ANNUAL));
+  protected readonly riskFree = RISK_FREE_ANNUAL;
+
   protected readonly period = computed(() => {
     const p = this.points();
     if (p.length < 2) return '';
@@ -244,5 +298,11 @@ export class PerformancePage {
   }
   protected pct(v: number): string {
     return formatPercent(v);
+  }
+  protected pctPlain(v: number): string {
+    return formatPercentPlain(v);
+  }
+  protected ratio(v: number): string {
+    return ratioFmt.format(v);
   }
 }
