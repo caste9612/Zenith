@@ -48,8 +48,8 @@ vincolo di progetto «dati finanziari fuori da git».
 - [x] `refreshAll` — conversione in **EUR** via FX, lista `failed`, **non** sovrascrive i simboli non risolti. *(Resta: `minIntervalMs` con mock dei timer.)*
 - [x] selezione provider (`supports`).
 
-### `core/quotes/fx.provider.ts`
-- [ ] `getRate` — stessa valuta → `1`, parsing risposta **Frankfurter**, **fallback** `open.er-api`, errore → `null` (mock di `platformFetch`).
+### `core/quotes/fx.provider.ts` — `fx.provider.spec.ts`
+- [x] `getRate` — stessa valuta → `1`, parsing risposta **Frankfurter**, **fallback** `open.er-api`, errore → `null` (spy su `window.fetch`, usato da `platformFetch` fuori da Tauri).
 
 ### Snapshot / patrimonio netto — `core/balance/net-worth.spec.ts`
 - [x] `computeNetWorth` = somma asset − passività (`isLiability`).
