@@ -32,6 +32,7 @@ Leggi questi documenti come parte del contesto:
 - @docs/05-firestore-security-rules.md — regole di sicurezza Firestore
 - @docs/06-glossario.md — glossario del dominio (linguaggio comune)
 - @docs/07-performance.md — strategia di performance e reattività (zoneless, Signals, offline, lazy)
+- @docs/08-testing.md — strategia di test e validazione (suite sulla logica finanziaria, oracolo Excel)
 
 ## Stack (sintesi)
 Angular (LTS, standalone, Signals, **change detection zoneless + OnPush**) · Firebase (Firestore + Auth email/password, offline abilitato; letture realtime → Signal) · Tauri 2 per impacchettare Windows + Android · plugin HTTP di Tauri per le API di mercato (evita la CORS del browser).

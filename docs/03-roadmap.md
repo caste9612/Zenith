@@ -5,8 +5,11 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
 ## Stato attuale (aggiornato)
 - **Fase 0 — Fondamenta:** ✅ **completata** — Angular 20 zoneless, Firebase (Auth + Firestore offline), guscio Tauri, design system dark/light, deploy su Firebase Hosting.
 - **Fase 1 — MVP:** ✅ **completata** — snapshot mensili (crea/modifica/elimina, precompilati), import dello storico dall'Excel, dashboard (netto + variazione + grafico + ripartizione), portafoglio con quotazioni.
-- **Fase 2 — Transazioni e P&L:** 🔶 **in corso** — acquisto/vendita (prezzo = importo/quantità), dividendi + contatore, P&L da **costo medio**, movimenti con eliminazione. *Mancano:* depositi/prelievi sui conti.
-- **Fase 3 — Avanzate:** 🔶 **parziale** — multivaluta + cambio in EUR, quote multi-provider (Finnhub/Alpha Vantage/manuale), prezzo manuale per BTP/non coperti, allocazione a torta, grafico interattivo. *Mancano:* **benchmark NASDAQ/S&P**, indicatori (es. Sharpe), report/export, dettaglio fondo crypto.
+- **Fase 2 — Transazioni e P&L:** ✅ **completata** — acquisto/vendita (prezzo = importo/quantità), dividendi + contatore, P&L da **costo medio**, movimenti con eliminazione. *(Depositi/prelievi sui conti esclusi per scelta del committente: a fine mese si inserisce il saldo dei conti nello snapshot, e tanto basta.)*
+- **Fase 3 — Avanzate:** 🔶 **parziale** — multivaluta + cambio in EUR, quote multi-provider (Finnhub/Alpha Vantage/manuale), prezzo manuale per BTP/non coperti, allocazione a torta, grafico interattivo, **benchmark S&P/NASDAQ** (pagina Rendimento). *Manca:* **indicatori** (es. Sharpe).
+- **Qualità — Test:** 🔶 **da avviare** — suite di test sulla logica finanziaria; piano e checklist in `docs/08-testing.md`.
+
+> **Fuori ambito (scelta del committente):** depositi/prelievi sui conti, **report/export**, **dettaglio del fondo crypto** (la voce "Crypto" resta nel patrimonio, ma senza drill-down dedicato).
 
 ## Fase 0 — Fondamenta
 1. Leggi `data/patrimonio.xlsx` (se manca, fermati e chiedilo).
@@ -26,19 +29,23 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
 - **Stop-gate.**
 
 ## Fase 2 — Transazioni e P&L
-- Acquisto, **vendita totale/parziale**, dividendi, depositi/prelievi.
+- Acquisto, **vendita totale/parziale**, dividendi. *(Depositi/prelievi sui conti: fuori ambito — basta il saldo mensile.)*
 - Prezzo medio di carico e calcolo **plus/minusvalenze (P&L)**.
 - Storicizzazione dei movimenti.
 - **Stop-gate.**
 
 ## Fase 3 — Avanzate
-- Supporto **BTP/bond** con override manuale del prezzo.
-- Multivaluta avanzata e gestione cambi.
-- **Asset allocation** e indicatori (es. indice di Sharpe).
-- Report ed export.
+- Supporto **BTP/bond** con override manuale del prezzo. ✅
+- Multivaluta avanzata e gestione cambi. ✅
+- **Asset allocation** ✅ e **indicatori** (es. indice di Sharpe). ⬅️ prossimo
+- ~~Report ed export.~~ *(fuori ambito)*
 - **Stop-gate.**
+
+## Qualità — Test
+- Suite di test sulla **logica finanziaria**, validata sui dati reali dell'Excel come oracolo (senza versionarli).
+- Piano completo, vincoli e checklist per modulo: **`docs/08-testing.md`**.
 
 ## Idee future (backlog, non pianificate)
 - Notifiche/promemoria per lo snapshot mensile.
-- Backup/export periodico dei dati.
+- Backup periodico dei dati. *(Distinto dall'export "report", fuori ambito: qui si intende solo la messa in sicurezza dei dati.)*
 - Eventuale aggiornamento quotazioni schedulato (valutare solo se si accetta il passaggio a Blaze).
