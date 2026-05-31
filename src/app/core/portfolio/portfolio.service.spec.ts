@@ -114,4 +114,10 @@ describe('PortfolioService · PMC e P&L (metodo del costo medio)', () => {
     expect(instruments.items.length).toBe(1); // simbolo normalizzato in maiuscolo
     expect(instruments.items[0].id).toBe('AAA');
   });
+
+  it('caso limite: vendita superiore al posseduto si limita al disponibile (nessun errore)', async () => {
+    await service.addBuy({ symbol: 'AAA', date: d(1), quantity: 10, amount: 1000 });
+    await service.addSell({ symbol: 'AAA', date: d(2), quantity: 999, amount: 50000 });
+    expect(holdingFor('AAA')).toBeUndefined(); // quantità clampata a 0 → posizione rimossa
+  });
 });

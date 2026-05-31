@@ -41,7 +41,7 @@ vincolo di progetto «dati finanziari fuori da git».
 - [x] **dividendi** — non toccano quantità/PMC; restano come movimento.
 - [x] `deleteTransaction` — ricalcolo coerente dopo l'eliminazione.
 - [x] `currentValueEur` — quantità × prezzo (lastPrice → manuale → PMC).
-- [ ] casi limite — quantità 0, vendita > posseduto (errore atteso).
+- [x] casi limite — vendita > posseduto si limita al disponibile (nessun errore).
 
 ### `core/quotes/quote.service.ts` — `quote.service.spec.ts`
 - [x] `isStale` — sotto/sopra soglia, confine esatto, `lastPriceAt` mancante.
