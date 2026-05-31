@@ -9,34 +9,15 @@ import {
 import { formatEur, formatPercent, formatSignedEur } from '../../core/money/format';
 import { Instrument } from '../../core/models';
 import { QuoteService } from '../../core/quotes/quote.service';
+import { AllocationPieComponent, PieItem } from '../../shared/allocation-pie';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
-const PALETTE = [
-  '#3b5bdb',
-  '#12b886',
-  '#f08c00',
-  '#e8590c',
-  '#7048e8',
-  '#1098ad',
-  '#e64980',
-  '#2f9e44',
-  '#f59f00',
-  '#4263eb',
-];
 const dtFmt = new Intl.DateTimeFormat('it-IT', {
   day: '2-digit',
   month: 'short',
   hour: '2-digit',
   minute: '2-digit',
 });
-
-function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): string {
-  const p = (a: number): [number, number] => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-  const [x0, y0] = p(a0);
-  const [x1, y1] = p(a1);
-  const large = a1 - a0 > Math.PI ? 1 : 0;
-  return `M${cx} ${cy} L${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
-}
 
 interface Variation {
   abs: number;
@@ -45,7 +26,7 @@ interface Variation {
 
 @Component({
   selector: 'app-portfolio',
-  imports: [RouterLink, ValueChartComponent],
+  imports: [RouterLink, ValueChartComponent, AllocationPieComponent],
   template: `
     <section class="page">
       <header class="page-header row row-between">
@@ -93,22 +74,7 @@ interface Variation {
         <div class="grid two">
           <div class="card">
             <span class="label">Allocazione</span>
-            <div class="pie-wrap">
-              <svg viewBox="0 0 120 120" class="pie" aria-hidden="true">
-                @for (s of slices(); track s.symbol) {
-                  <path [attr.d]="s.d" [attr.fill]="s.color" />
-                }
-              </svg>
-              <ul class="legend">
-                @for (s of slices(); track s.symbol) {
-                  <li>
-                    <span class="dot" [style.background]="s.color"></span>
-                    <span class="lsym">{{ s.symbol }}</span>
-                    <span class="muted">{{ s.pct }}%</span>
-                  </li>
-                }
-              </ul>
-            </div>
+            <app-allocation-pie [items]="allocationItems()" />
           </div>
           <div class="card sumcard">
             <div>
@@ -234,41 +200,6 @@ interface Variation {
       .mid {
         font-size: 1.2rem;
         font-weight: var(--fw-semibold);
-      }
-      .pie-wrap {
-        display: flex;
-        align-items: center;
-        gap: var(--space-5);
-        flex-wrap: wrap;
-        margin-top: var(--space-3);
-      }
-      .pie {
-        width: 120px;
-        height: 120px;
-        flex: none;
-      }
-      .legend {
-        list-style: none;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-        gap: var(--space-1) var(--space-3);
-        flex: 1;
-        min-width: 140px;
-      }
-      .legend li {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        font-size: var(--fs-label);
-      }
-      .legend .lsym {
-        font-weight: var(--fw-medium);
-      }
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 3px;
-        flex: none;
       }
       .pos {
         display: flex;
@@ -479,24 +410,9 @@ export class PortfolioPage {
     return t ? `Quotazioni: ${dtFmt.format(new Date(t))}` : 'Quotazioni non ancora aggiornate';
   });
 
-  protected readonly slices = computed(() => {
-    const rows = this.rows().filter((r) => r.value > 0);
-    const total = rows.reduce((s, r) => s + r.value, 0);
-    if (total <= 0) return [];
-    let a = -Math.PI / 2;
-    return rows.map((r, i) => {
-      const frac = r.value / total;
-      const a0 = a;
-      const a1 = a + frac * 2 * Math.PI;
-      a = a1;
-      return {
-        symbol: r.symbol,
-        color: PALETTE[i % PALETTE.length],
-        pct: Math.round(frac * 100),
-        d: arcPath(60, 60, 56, a0, a1),
-      };
-    });
-  });
+  protected readonly allocationItems = computed<PieItem[]>(() =>
+    this.rows().map((r) => ({ label: r.symbol, value: r.value })),
+  );
 
   protected eur(v: number): string {
     return formatEur(v);

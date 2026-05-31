@@ -1,14 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
 import { formatEur, formatSignedEur } from '../../core/money/format';
-import { Owner, OWNER_LABELS, OWNERS } from '../../core/models';
+import { AssetClass, ASSET_CLASS_LABELS, Owner, OWNER_LABELS, OWNERS } from '../../core/models';
+import { AllocationPieComponent, PieItem } from '../../shared/allocation-pie';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
 const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' });
 
 @Component({
   selector: 'app-dashboard',
-  imports: [ValueChartComponent],
+  imports: [ValueChartComponent, AllocationPieComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -43,6 +44,11 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
         <div class="card">
           <span class="label">Andamento patrimonio</span>
           <app-value-chart [points]="series()" />
+        </div>
+
+        <h2 class="section-title">Ripartizione per classe</h2>
+        <div class="card">
+          <app-allocation-pie [items]="byClass()" />
         </div>
 
         <h2 class="section-title">Per intestatario</h2>
@@ -210,6 +216,22 @@ export class DashboardPage {
   protected readonly series = computed<ChartPoint[]>(() =>
     this.snapshots().map((s) => ({ date: s.date, value: s.netWorth })),
   );
+
+  /** Ripartizione del patrimonio per classe di asset (solo voci attive, escluse le passività). */
+  protected readonly byClass = computed<PieItem[]>(() => {
+    const l = this.latest();
+    if (!l) return [];
+    const totals = new Map<AssetClass, number>();
+    for (const a of this.accounts()) {
+      if (a.isLiability) continue;
+      const v = l.values[a.id ?? ''] ?? 0;
+      if (v <= 0) continue;
+      totals.set(a.assetClass, (totals.get(a.assetClass) ?? 0) + v);
+    }
+    return [...totals.entries()]
+      .map(([cls, value]) => ({ label: ASSET_CLASS_LABELS[cls], value }))
+      .sort((x, y) => y.value - x.value);
+  });
 
   protected monthLabel(): string {
     const l = this.latest();

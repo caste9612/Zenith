@@ -37,6 +37,26 @@ export class PortfolioService {
   /** Account/contenitore del portafoglio azionario (dallo schema importato). */
   private readonly accountId = 'azionario';
 
+  /**
+   * Valore corrente del portafoglio in EUR: somma di (quantità × prezzo corrente) di ogni
+   * posizione. Il prezzo è `lastPrice` (auto, già convertito in EUR dal QuoteService) o
+   * `manualPrice`, con fallback al costo medio. Usato per precompilare la voce "Azionario"
+   * del nuovo snapshot (drill-down portafoglio → patrimonio).
+   */
+  async currentValueEur(): Promise<number> {
+    const [holdings, instruments] = await Promise.all([
+      this.holdingsRepo.list(),
+      this.instrumentsRepo.list(),
+    ]);
+    const byId = new Map(instruments.map((i) => [i.id ?? i.symbol, i]));
+    const total = holdings.reduce((sum, h) => {
+      const ins = byId.get(h.instrumentId);
+      const price = ins?.lastPrice ?? ins?.manualPrice ?? h.avgCost;
+      return sum + h.quantity * price;
+    }, 0);
+    return round(total, 2);
+  }
+
   /** Trova (o crea) lo strumento; ritorna l'id (= simbolo maiuscolo). */
   async ensureInstrument(symbol: string, name?: string): Promise<string> {
     const sym = symbol.trim().toUpperCase();

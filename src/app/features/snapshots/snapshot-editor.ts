@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
 import { formatEur } from '../../core/money/format';
 import { Account, Owner, OWNER_LABELS, OWNERS, Snapshot } from '../../core/models';
+import { PortfolioService } from '../../core/portfolio/portfolio.service';
 
 const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' });
 
@@ -47,7 +48,12 @@ function labelOf(key: string): string {
           <div class="stack-sm">
             @for (a of g.accounts; track a.id) {
               <label class="card field">
-                <span class="fname">{{ a.name }}</span>
+                <span class="fname">
+                  {{ a.name }}
+                  @if (a.linkedToPortfolio) {
+                    <span class="hint">dal portafoglio</span>
+                  }
+                </span>
                 <span class="input-wrap">
                   <input
                     type="number"
@@ -104,6 +110,14 @@ function labelOf(key: string): string {
       }
       .fname {
         font-weight: var(--fw-medium);
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      .hint {
+        font-size: var(--fs-small);
+        font-weight: var(--fw-regular);
+        color: var(--accent);
       }
       .input-wrap {
         display: inline-flex;
@@ -147,11 +161,15 @@ function labelOf(key: string): string {
 export class SnapshotEditorPage {
   private readonly accountsRepo = inject(AccountsRepository);
   private readonly snapshotsRepo = inject(SnapshotsRepository);
+  private readonly portfolio = inject(PortfolioService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   protected readonly accounts = signal<Account[]>([]);
   protected readonly loading = signal(true);
+
+  /** Voci disattivate ma presenti nello snapshot in modifica: vanno comunque mostrate. */
+  private readonly extraIds = signal<Set<string>>(new Set());
 
   private readonly editId = signal<string | null>(this.route.snapshot.paramMap.get('id'));
   protected readonly isNew = computed(() => this.editId() === null);
@@ -161,7 +179,8 @@ export class SnapshotEditorPage {
   protected readonly busy = signal(false);
 
   protected readonly groups = computed(() => {
-    const accs = this.accounts();
+    const extra = this.extraIds();
+    const accs = this.accounts().filter((a) => a.active !== false || extra.has(a.id ?? ''));
     return OWNERS.map((o) => ({
       owner: o,
       label: OWNER_LABELS[o],
@@ -194,12 +213,22 @@ export class SnapshotEditorPage {
     if (id) {
       const snap = snaps.find((s) => s.id === id);
       this.monthKey.set(id);
-      this.values.set(snap ? { ...snap.values } : {});
+      const values = snap ? { ...snap.values } : {};
+      this.values.set(values);
+      // mantieni visibili eventuali voci ora disattivate ma valorizzate in questo snapshot
+      this.extraIds.set(new Set(Object.keys(values).filter((k) => (values[k] ?? 0) !== 0)));
     } else {
       const last = snaps.at(-1) ?? null;
       const key = last ? nextMonthKey(last.id ?? monthKeyOf(last.date)) : monthKeyOf(new Date());
       this.monthKey.set(key);
-      this.values.set(last ? { ...last.values } : {}); // precompila dal mese precedente
+      const values = last ? { ...last.values } : {}; // precompila dal mese precedente
+      // le voci alimentate dal portafoglio si precompilano dal valore live (es. "Azionario")
+      const linked = accs.filter((a) => a.linkedToPortfolio && a.id);
+      if (linked.length) {
+        const portfolioValue = await this.portfolio.currentValueEur();
+        for (const a of linked) values[a.id as string] = portfolioValue;
+      }
+      this.values.set(values);
     }
     this.loading.set(false);
   }

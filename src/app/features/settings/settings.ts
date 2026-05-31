@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemePreference } from '../../core/models';
@@ -6,6 +7,7 @@ import { ThemeService } from '../../core/theme/theme.service';
 
 @Component({
   selector: 'app-settings',
+  imports: [RouterLink],
   template: `
     <section class="page">
       <header class="page-header">
@@ -31,6 +33,14 @@ import { ThemeService } from '../../core/theme/theme.service';
             }
           </div>
         </div>
+
+        <a class="card setting nav" routerLink="/accounts">
+          <div>
+            <div class="label">Conti e voci</div>
+            <div class="muted">Aggiungi, rinomina o disattiva le voci del patrimonio.</div>
+          </div>
+          <span class="chev">›</span>
+        </a>
 
         <div class="card setting">
           <div>
@@ -77,6 +87,19 @@ import { ThemeService } from '../../core/theme/theme.service';
         align-items: center;
         justify-content: space-between;
         gap: var(--space-4);
+      }
+      .nav {
+        text-decoration: none;
+        color: inherit;
+        transition: background var(--t-fast);
+      }
+      .nav:hover {
+        background: var(--surface-hover);
+      }
+      .chev {
+        color: var(--text-muted);
+        font-size: 1.4rem;
+        line-height: 1;
       }
       .segmented {
         display: inline-flex;

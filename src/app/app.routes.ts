@@ -73,5 +73,23 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/settings/settings').then((m) => m.SettingsPage),
   },
+  {
+    path: 'accounts',
+    title: 'Conti e voci · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/accounts/accounts').then((m) => m.AccountsPage),
+  },
+  {
+    path: 'accounts/new',
+    title: 'Nuova voce · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/accounts/account-edit').then((m) => m.AccountEditPage),
+  },
+  {
+    path: 'accounts/:id',
+    title: 'Modifica voce · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/accounts/account-edit').then((m) => m.AccountEditPage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];
