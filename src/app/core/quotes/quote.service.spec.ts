@@ -25,6 +25,7 @@ describe('QuoteService', () => {
   let repo: FakeInstruments;
   let quotes: Record<string, Quote | null>;
   let usdToEur: number;
+  let avCallTimes: number[]; // istanti (ms) delle chiamate ad Alpha Vantage, per il rate limit
 
   const finnhub = {
     id: 'finnhub',
@@ -35,7 +36,10 @@ describe('QuoteService', () => {
     id: 'alphavantage',
     minIntervalMs: 0,
     supports: (i: Instrument) => i.provider === 'alphavantage',
-    getQuote: async (i: Instrument) => quotes[i.symbol] ?? null,
+    getQuote: async (i: Instrument) => {
+      avCallTimes.push(Date.now());
+      return quotes[i.symbol] ?? null;
+    },
   };
   const fx = { getRate: async (from: string, to: string) => (from === to ? 1 : usdToEur) };
 
@@ -51,6 +55,8 @@ describe('QuoteService', () => {
     repo = new FakeInstruments();
     quotes = {};
     usdToEur = 0.5;
+    avCallTimes = [];
+    alphavantage.minIntervalMs = 0;
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -129,6 +135,20 @@ describe('QuoteService', () => {
       expect(r.updated).toBe(2);
       expect(repo.items.find((i) => i.symbol === 'US')!.lastPrice).toBe(1);
       expect(repo.items.find((i) => i.symbol === 'EU')!.lastPrice).toBe(2);
+    });
+
+    it('distanzia le chiamate consecutive allo stesso provider (minIntervalMs)', async () => {
+      alphavantage.minIntervalMs = 60; // piccolo intervallo reale per il test
+      repo.items = [
+        inst({ symbol: 'A1', provider: 'alphavantage', currency: 'EUR' }),
+        inst({ symbol: 'A2', provider: 'alphavantage', currency: 'EUR' }),
+      ];
+      quotes['A1'] = { symbol: 'A1', price: 1, currency: 'EUR', at: new Date() };
+      quotes['A2'] = { symbol: 'A2', price: 2, currency: 'EUR', at: new Date() };
+      await service.refreshAll();
+      expect(avCallTimes.length).toBe(2);
+      // la seconda chiamata parte almeno ~minIntervalMs dopo la prima (con slack per la CI)
+      expect(avCallTimes[1] - avCallTimes[0]).toBeGreaterThanOrEqual(45);
     });
   });
 });
