@@ -125,6 +125,119 @@
   display: none;
 }
 
+// --- Pannello impostazioni ---
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+  animation: fade-in var(--t-fast) ease;
+}
+.modal {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - var(--space-6)));
+  max-height: calc(100vh - var(--space-6));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, var(--shadow-sm));
+  animation: pop-in var(--t-fast) ease;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+.modal-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: var(--fw-bold);
+}
+.modal-body {
+  display: flex;
+  flex-direction: column;
+}
+.modal-body .setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+.modal-body .setting + .setting {
+  border-top: 1px solid var(--border);
+}
+.modal-body .setting.nav {
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--t-fast);
+}
+.modal-body .setting.nav:hover {
+  background: var(--surface-hover);
+}
+.modal-body .chev {
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.segmented {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 3px;
+}
+.segmented button {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: calc(var(--radius) - 3px);
+  font-weight: var(--fw-medium);
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
+}
+.segmented button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+.chip.ok {
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+.chip.warn {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+.modal code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
+  }
+}
+
 @media (max-width: 879px) {
   .shell {
     display: block;
@@ -140,7 +253,7 @@
   }
   .bottom-nav {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     position: fixed;
     left: 0;
     right: 0;

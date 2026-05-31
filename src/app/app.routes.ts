@@ -74,12 +74,6 @@ export const routes: Routes = [
       import('./features/snapshots/snapshot-editor').then((m) => m.SnapshotEditorPage),
   },
   {
-    path: 'settings',
-    title: 'Impostazioni · Zenith',
-    canActivate: [authGuard],
-    loadComponent: () => import('./features/settings/settings').then((m) => m.SettingsPage),
-  },
-  {
     path: 'accounts',
     title: 'Conti e voci · Zenith',
     canActivate: [authGuard],
