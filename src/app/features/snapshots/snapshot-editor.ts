@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
 import { formatEur } from '../../core/money/format';
 import { Account, Owner, OWNER_LABELS, OWNERS, Snapshot } from '../../core/models';
+import { computeNetWorth, totalsByOwner } from '../../core/balance/net-worth';
 import { PortfolioService } from '../../core/portfolio/portfolio.service';
 
 const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' });
@@ -188,13 +189,7 @@ export class SnapshotEditorPage {
     })).filter((g) => g.accounts.length > 0);
   });
 
-  protected readonly netWorth = computed(() => {
-    const v = this.values();
-    return this.accounts().reduce((sum, a) => {
-      const val = v[a.id ?? ''] ?? 0;
-      return sum + (a.isLiability ? -val : val);
-    }, 0);
-  });
+  protected readonly netWorth = computed(() => computeNetWorth(this.accounts(), this.values()));
 
   protected readonly title = computed(() => (this.monthKey() ? labelOf(this.monthKey()) : ''));
 
@@ -252,11 +247,9 @@ export class SnapshotEditorPage {
     if (!key || this.busy()) return;
     this.busy.set(true);
     try {
-      const byOwner: Partial<Record<Owner, number>> = {};
-      for (const a of this.accounts()) {
-        const val = (this.values()[a.id ?? ''] ?? 0) * (a.isLiability ? -1 : 1);
-        byOwner[a.owner] = (byOwner[a.owner] ?? 0) + val;
-      }
+      const byOwner = Object.fromEntries(totalsByOwner(this.accounts(), this.values())) as Partial<
+        Record<Owner, number>
+      >;
       const snapshot: Snapshot = {
         id: key,
         date: monthEndDate(key),

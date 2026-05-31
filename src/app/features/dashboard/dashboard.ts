@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
 import { formatEur, formatSignedEur } from '../../core/money/format';
-import { AssetClass, ASSET_CLASS_LABELS, Owner, OWNER_LABELS, OWNERS } from '../../core/models';
+import { ASSET_CLASS_LABELS, Owner, OWNER_LABELS, OWNERS } from '../../core/models';
+import { totalsByAssetClass, totalsByOwner } from '../../core/balance/net-worth';
 import { AllocationPieComponent, PieItem } from '../../shared/allocation-pie';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
@@ -185,11 +186,7 @@ export class DashboardPage {
   protected readonly ownerTotals = computed(() => {
     const l = this.latest();
     if (!l) return [];
-    const totals = new Map<Owner, number>();
-    for (const a of this.accounts()) {
-      const v = l.values[a.id ?? ''] ?? 0;
-      totals.set(a.owner, (totals.get(a.owner) ?? 0) + (a.isLiability ? -v : v));
-    }
+    const totals = totalsByOwner(this.accounts(), l.values);
     return OWNERS.filter((o) => totals.has(o)).map((o) => ({
       owner: o,
       label: OWNER_LABELS[o],
@@ -221,14 +218,7 @@ export class DashboardPage {
   protected readonly byClass = computed<PieItem[]>(() => {
     const l = this.latest();
     if (!l) return [];
-    const totals = new Map<AssetClass, number>();
-    for (const a of this.accounts()) {
-      if (a.isLiability) continue;
-      const v = l.values[a.id ?? ''] ?? 0;
-      if (v <= 0) continue;
-      totals.set(a.assetClass, (totals.get(a.assetClass) ?? 0) + v);
-    }
-    return [...totals.entries()]
+    return [...totalsByAssetClass(this.accounts(), l.values, { assetsOnly: true }).entries()]
       .map(([cls, value]) => ({ label: ASSET_CLASS_LABELS[cls], value }))
       .sort((x, y) => y.value - x.value);
   });

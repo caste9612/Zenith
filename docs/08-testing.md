@@ -51,10 +51,10 @@ vincolo di progetto «dati finanziari fuori da git».
 ### `core/quotes/fx.provider.ts`
 - [ ] `getRate` — stessa valuta → `1`, parsing risposta **Frankfurter**, **fallback** `open.er-api`, errore → `null` (mock di `platformFetch`).
 
-### Snapshot / patrimonio netto
-- [ ] `netWorth` = somma asset − passività (`LIABILITY_CLASSES`).
-- [ ] aggregati `byOwner` e `byAssetClass`.
-- [ ] precompilazione del nuovo snapshot dai valori del mese precedente.
+### Snapshot / patrimonio netto — `core/balance/net-worth.spec.ts`
+- [x] `computeNetWorth` = somma asset − passività (`isLiability`).
+- [x] aggregati `totalsByOwner` e `totalsByAssetClass` (con `assetsOnly` per la torta).
+- [ ] precompilazione del nuovo snapshot dai valori del mese precedente (logica nel componente).
 
 ### Indicatori (Sharpe & co.) — *quando implementati*
 - [ ] serie dei **rendimenti mensili** dal track record.

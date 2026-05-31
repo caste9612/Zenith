@@ -41,7 +41,7 @@
 2. **Ampliare la suite** secondo la checklist di `docs/08-testing.md`:
    - ✅ `core/portfolio/portfolio.service.ts` — **PMC / P&L** (costo medio, vendite parziali/totali, dividendi, `deleteTransaction`, `currentValueEur`) → `portfolio.service.spec.ts`.
    - ✅ `core/quotes/quote.service.ts` — **staleness**, conversione **EUR**, lista `failed`, selezione provider → `quote.service.spec.ts`. **Resta:** `fx.provider.ts` e il rate-limit `minIntervalMs` (servono mock di `platformFetch`/timer).
-   - **Snapshot / patrimonio netto** — somma asset − passività, aggregati per owner/classe, precompilazione. ⬅️ prossimo
+   - ✅ **Snapshot / patrimonio netto** — `core/balance/net-worth.ts` (funzioni pure `computeNetWorth`, `totalsByOwner`, `totalsByAssetClass`) estratte da dashboard/editor/parser e testate → `net-worth.spec.ts`. Resta la precompilazione (logica nel componente).
 3. **Validazione locale sull'Excel.** Quando carichi l'Excel in `data/`: `npm run import:parse` → confrontare i totali calcolati dall'app con quelli reali (fixture reali gitignorate, vedi `08-testing.md`).
 4. **(Opzionale) Indicatori sul patrimonio netto.** Estendere gli indicatori anche alla serie degli **snapshot** (non solo al portafoglio titoli).
 
