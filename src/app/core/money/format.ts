@@ -1,9 +1,12 @@
 // Formattazione di numeri finanziari (valuta base EUR, locale it-IT).
 
+// useGrouping: true → separatore delle migliaia sempre (it-IT di default usa "min2", che
+// per 1.111/2.707 lo ometterebbe: numeri finanziari incoerenti). Vedi 04-design-guidelines.
 const eur0 = new Intl.NumberFormat('it-IT', {
   style: 'currency',
   currency: 'EUR',
   maximumFractionDigits: 0,
+  useGrouping: true,
 });
 
 const eur2 = new Intl.NumberFormat('it-IT', {
@@ -11,6 +14,7 @@ const eur2 = new Intl.NumberFormat('it-IT', {
   currency: 'EUR',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+  useGrouping: true,
 });
 
 const signedEur0 = new Intl.NumberFormat('it-IT', {
@@ -18,6 +22,7 @@ const signedEur0 = new Intl.NumberFormat('it-IT', {
   currency: 'EUR',
   maximumFractionDigits: 0,
   signDisplay: 'exceptZero',
+  useGrouping: true,
 });
 
 const pct = new Intl.NumberFormat('it-IT', {

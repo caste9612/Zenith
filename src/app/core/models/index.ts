@@ -5,4 +5,5 @@ export * from './instrument';
 export * from './holding';
 export * from './transaction';
 export * from './snapshot';
+export * from './portfolio-history';
 export * from './settings';

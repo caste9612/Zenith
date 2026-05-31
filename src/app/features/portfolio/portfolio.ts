@@ -34,7 +34,10 @@ interface Variation {
           <h1>Portafoglio</h1>
           <p class="subtitle">Posizioni, valore e P/L.</p>
         </div>
-        <a class="btn btn-ghost" routerLink="/portfolio/movimenti">Movimenti</a>
+        <div class="row" style="gap:var(--space-2)">
+          <a class="btn btn-ghost" routerLink="/portfolio/rendimento">Rendimento</a>
+          <a class="btn btn-ghost" routerLink="/portfolio/movimenti">Movimenti</a>
+        </div>
       </header>
 
       @if (rows().length) {

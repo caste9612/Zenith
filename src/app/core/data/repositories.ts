@@ -6,6 +6,7 @@ import {
   DEFAULT_SETTINGS,
   Holding,
   Instrument,
+  PortfolioHistoryPoint,
   Snapshot,
   Transaction,
 } from '../models';
@@ -42,6 +43,15 @@ export class SnapshotsRepository extends BaseRepository<Snapshot> {
 @Injectable({ providedIn: 'root' })
 export class InstrumentsRepository extends BaseRepository<Instrument> {
   protected readonly collectionName = 'instruments';
+}
+
+@Injectable({ providedIn: 'root' })
+export class PortfolioHistoryRepository extends BaseRepository<PortfolioHistoryPoint> {
+  protected readonly collectionName = 'portfolioHistory';
+  /** Storico mensile in tempo reale, ordine cronologico (chiamare in un contesto di injection). */
+  connectByDate(): Signal<PortfolioHistoryPoint[]> {
+    return this.connect(orderBy('date', 'asc'));
+  }
 }
 
 @Injectable({ providedIn: 'root' })
