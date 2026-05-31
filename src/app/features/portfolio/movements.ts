@@ -142,7 +142,10 @@ export class MovementsPage {
         detail,
         type: t.type,
         typeLabel: TRANSACTION_TYPE_LABELS[t.type],
-        symbol: sym.get(t.instrumentId ?? '') ?? t.instrumentId ?? '—',
+        symbol:
+          sym.get(t.instrumentId ?? '') ??
+          t.instrumentId ??
+          (t.type === 'dividend' ? 'Dividendi' : '—'),
         amount: t.amount,
       };
     });

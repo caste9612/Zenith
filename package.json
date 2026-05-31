@@ -13,6 +13,7 @@
     "import:parse": "node scripts/import/parse-excel.mjs",
     "import:seed": "node scripts/import/seed-firestore.mjs",
     "import:openings": "node scripts/import/holdings-to-transactions.mjs",
+    "import:dividends": "node scripts/import/dividends.mjs",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
