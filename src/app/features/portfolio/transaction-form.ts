@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { InstrumentsRepository } from '../../core/data';
 import { formatEur } from '../../core/money/format';
 import { Instrument } from '../../core/models';
@@ -8,7 +8,8 @@ import { PortfolioService } from '../../core/portfolio/portfolio.service';
 type TxKind = 'buy' | 'sell' | 'dividend';
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 function parseDate(iso: string): Date {
   return new Date(`${iso}T12:00:00Z`); // mezzogiorno UTC, niente shift di fuso
@@ -20,8 +21,14 @@ function parseDate(iso: string): Date {
   template: `
     <section class="page">
       <header class="page-header">
-        <h1>Nuova operazione</h1>
-        <p class="subtitle">Acquisto, vendita o dividendo.</p>
+        <h1>{{ locked ? symbol() : 'Aggiungi titolo' }}</h1>
+        <p class="subtitle">
+          {{
+            locked
+              ? 'Registra un acquisto, una vendita o un dividendo.'
+              : 'Nuovo titolo: inserisci il simbolo e il primo acquisto.'
+          }}
+        </p>
       </header>
 
       <div class="segmented">
@@ -37,21 +44,23 @@ function parseDate(iso: string): Date {
       </div>
 
       <div class="card stack-sm form">
-        <label class="field">
-          <span class="label">Strumento</span>
-          <input
-            list="instr-list"
-            [value]="symbol()"
-            (input)="setSymbol($event)"
-            placeholder="Es. ACOMO"
-            autocapitalize="characters"
-          />
-        </label>
-        <datalist id="instr-list">
-          @for (i of instruments(); track i.id) {
-            <option [value]="i.symbol">{{ i.name }}</option>
-          }
-        </datalist>
+        @if (!locked) {
+          <label class="field">
+            <span class="label">Simbolo</span>
+            <input
+              list="instr-list"
+              [value]="symbol()"
+              (input)="setSymbol($event)"
+              placeholder="Es. ACOMO"
+              autocapitalize="characters"
+            />
+          </label>
+          <datalist id="instr-list">
+            @for (i of instruments(); track i.id) {
+              <option [value]="i.symbol">{{ i.name }}</option>
+            }
+          </datalist>
+        }
 
         <label class="field">
           <span class="label">Data</span>
@@ -165,11 +174,16 @@ function parseDate(iso: string): Date {
 export class TransactionFormPage {
   private readonly portfolio = inject(PortfolioService);
   private readonly instrumentsRepo = inject(InstrumentsRepository);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  /** Se presente nel path, l'operazione è su un titolo esistente (simbolo bloccato). */
+  private readonly preset = (this.route.snapshot.paramMap.get('symbol') ?? '').toUpperCase();
+  protected readonly locked = this.preset.length > 0;
 
   protected readonly instruments = signal<Instrument[]>([]);
   protected readonly type = signal<TxKind>('buy');
-  protected readonly symbol = signal('');
+  protected readonly symbol = signal(this.preset);
   protected readonly date = signal(todayIso());
   protected readonly quantity = signal<number | null>(null);
   protected readonly amount = signal<number | null>(null);

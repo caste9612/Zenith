@@ -53,10 +53,7 @@ interface Variation {
           <h1>Portafoglio</h1>
           <p class="subtitle">Posizioni, valore e P/L.</p>
         </div>
-        <div class="row">
-          <a class="btn btn-ghost" routerLink="/portfolio/movimenti">Movimenti</a>
-          <a class="btn btn-primary" routerLink="/portfolio/transaction">+ Operazione</a>
-        </div>
+        <a class="btn btn-ghost" routerLink="/portfolio/movimenti">Movimenti</a>
       </header>
 
       @if (rows().length) {
@@ -130,19 +127,35 @@ interface Variation {
 
         <div class="stack-sm">
           @for (r of rows(); track r.id) {
-            <a class="card pos" [routerLink]="['/portfolio/instrument', r.symbol]">
-              <div class="pos-main">
-                <div class="sym">{{ r.symbol }}</div>
-                <div class="muted small">{{ r.qty }} × PMC {{ eur2(r.avgCost) }}</div>
-              </div>
-              <div class="pos-vals">
-                <div class="num value">{{ eur(r.value) }}</div>
-                <div class="num small" [class.gain]="r.pl > 0" [class.loss]="r.pl < 0">
-                  {{ signed(r.pl) }} · {{ pct(r.plPct) }}
+            <div class="card pos">
+              <a class="pos-link" [routerLink]="['/portfolio/transaction', r.symbol]">
+                <span class="logo" [style.background]="logoColor(r.symbol)">{{
+                  monogram(r.symbol)
+                }}</span>
+                <div class="pos-main">
+                  <div class="sym">{{ r.symbol }}</div>
+                  <div class="muted small">{{ r.qty }} × PMC {{ eur2(r.avgCost) }}</div>
                 </div>
-              </div>
-            </a>
+                <div class="pos-vals">
+                  <div class="num value">{{ eur(r.value) }}</div>
+                  <div class="num small" [class.gain]="r.pl > 0" [class.loss]="r.pl < 0">
+                    {{ signed(r.pl) }} · {{ pct(r.plPct) }}
+                  </div>
+                </div>
+              </a>
+              <a
+                class="gear"
+                [routerLink]="['/portfolio/instrument', r.symbol]"
+                title="Prezzo e fonte"
+                aria-label="Prezzo e fonte"
+                >⚙</a
+              >
+            </div>
           }
+          <a class="card add-card" routerLink="/portfolio/transaction">
+            <span class="logo add">+</span>
+            <span class="add-label">Aggiungi titolo</span>
+          </a>
         </div>
 
         @if (failed().length) {
@@ -152,11 +165,10 @@ interface Variation {
           </p>
         }
       } @else {
-        <div class="card empty">
-          <p class="secondary">
-            Nessuna posizione. Aggiungi un'operazione con <strong>+ Operazione</strong>.
-          </p>
-        </div>
+        <a class="card add-card" routerLink="/portfolio/transaction">
+          <span class="logo add">+</span>
+          <span class="add-label">Aggiungi il primo titolo</span>
+        </a>
       }
     </section>
   `,
@@ -261,15 +273,75 @@ interface Variation {
       .pos {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: var(--space-1);
+        padding: var(--space-2) var(--space-3) var(--space-2) var(--space-3);
+      }
+      .pos-link {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
         gap: var(--space-3);
-        padding: var(--space-3) var(--space-4);
         color: inherit;
         text-decoration: none;
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius);
         transition: background var(--t-fast);
       }
-      .pos:hover {
+      .pos-link:hover {
         background: var(--surface-hover);
+      }
+      .pos-main {
+        flex: 1;
+        min-width: 0;
+      }
+      .logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: var(--fw-semibold);
+        font-size: var(--fs-small);
+        letter-spacing: 0.02em;
+      }
+      .gear {
+        flex: none;
+        color: var(--text-muted);
+        text-decoration: none;
+        padding: var(--space-2);
+        border-radius: var(--radius-sm);
+        line-height: 1;
+      }
+      .gear:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+      }
+      .add-card {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        color: var(--text-secondary);
+        text-decoration: none;
+        border-style: dashed;
+        transition: background var(--t-fast);
+      }
+      .add-card:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+      }
+      .logo.add {
+        background: var(--surface-2);
+        color: var(--accent);
+        font-size: 1.3rem;
+        font-weight: var(--fw-bold);
+      }
+      .add-label {
+        font-weight: var(--fw-medium);
       }
       .sym {
         font-weight: var(--fw-semibold);
@@ -437,5 +509,16 @@ export class PortfolioPage {
   }
   protected signed(v: number): string {
     return formatSignedEur(v);
+  }
+
+  /** Iniziali per il "logo" monogramma. */
+  protected monogram(symbol: string): string {
+    return symbol.slice(0, 2).toUpperCase();
+  }
+  /** Colore stabile derivato dal simbolo. */
+  protected logoColor(symbol: string): string {
+    let h = 0;
+    for (const c of symbol) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return `hsl(${h % 360} 48% 42%)`;
   }
 }

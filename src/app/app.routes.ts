@@ -22,7 +22,14 @@ export const routes: Routes = [
   },
   {
     path: 'portfolio/transaction',
-    title: 'Nuova operazione · Zenith',
+    title: 'Aggiungi titolo · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/portfolio/transaction-form').then((m) => m.TransactionFormPage),
+  },
+  {
+    path: 'portfolio/transaction/:symbol',
+    title: 'Operazione · Zenith',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/portfolio/transaction-form').then((m) => m.TransactionFormPage),
