@@ -23,7 +23,8 @@ Si procede **per fasi** e **alla fine di ogni fase ti fermi e aspetti la mia app
 La **prima cosa in assoluto**: quando l'Excel sarà presente in `data/`, leggilo e da quello deduci lo schema reale, **prima** di scrivere codice. Se l'Excel non c'è ancora, fermati e chiedimelo.
 
 ## Documentazione di progetto
-Leggi questi documenti come parte del contesto:
+Leggi questi documenti come parte del contesto. **Inizia da `09`**: dice a che punto siamo e cosa fare adesso.
+- @docs/09-stato-prossimi-passi.md — **handoff**: stato attuale, decisioni prese, prossimi passi (da leggere per primo)
 - @docs/00-build-prompt.md — il prompt operativo completo, punto di partenza
 - @docs/01-architecture.md — stack e decisioni tecniche con motivazioni
 - @docs/02-data-model.md — modello dati Firestore (provvisorio, da affinare sull'Excel)
@@ -33,6 +34,8 @@ Leggi questi documenti come parte del contesto:
 - @docs/06-glossario.md — glossario del dominio (linguaggio comune)
 - @docs/07-performance.md — strategia di performance e reattività (zoneless, Signals, offline, lazy)
 - @docs/08-testing.md — strategia di test e validazione (suite sulla logica finanziaria, oracolo Excel)
+
+> Nota di metodo: a **fine sessione** aggiorna `docs/09-stato-prossimi-passi.md` (e la roadmap se serve), così la sessione successiva riparte con il contesto giusto.
 
 ## Stack (sintesi)
 Angular (LTS, standalone, Signals, **change detection zoneless + OnPush**) · Firebase (Firestore + Auth email/password, offline abilitato; letture realtime → Signal) · Tauri 2 per impacchettare Windows + Android · plugin HTTP di Tauri per le API di mercato (evita la CORS del browser).
