@@ -65,6 +65,16 @@ Foto mensili del patrimonio (lo "storico" che sostituisce l'Excel).
 - `byAssetClass` (map, opz.) — ripartizione per classe
 - Pensato per essere **precompilato** dallo snapshot precedente e modificato nei pochi valori manuali.
 
+### `users/{uid}/portfolioHistory`
+Track record mensile del portafoglio titoli (importato dall'Excel), con confronto vs benchmark. Sola lettura; alimenta la pagina **Rendimento**. Un documento per mese (id `YYYY-MM`).
+- `date` (timestamp) — fine mese
+- `value` (number, EUR) — valore del portafoglio
+- `invested` (number, EUR) — capitale investito netto cumulato
+- `realized` (number, EUR) — plusvalenze realizzate cumulate (posizioni chiuse)
+- `openPL` (number, EUR) — P/L non realizzato del mese
+- `dividends` (number, EUR) — dividendi del mese
+- `sp` / `nasdaq` (number, EUR) — valore simulato investendo lo stesso flusso nell'indice
+
 ### `users/{uid}/settings`
 - `baseCurrency` (string) — default `EUR`
 - `quoteStalenessMinutes` (number) — soglia per il refresh all'avvio

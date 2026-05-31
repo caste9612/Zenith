@@ -21,6 +21,8 @@ Termini usati nel progetto, per allineare il linguaggio del codice e delle UI.
 - **Costo medio (PMC):** metodo di calcolo del prezzo medio di carico dai movimenti (somma dei costi / quantità). Una vendita non lo modifica; riduce la quantità e realizza il P&L.
 - **Movimento di apertura:** transazione "buy" iniziale generata dall'import che rappresenta la posizione di partenza. Le posizioni (quantità + PMC) sono **ricalcolate dai movimenti**.
 - **Variazione (1g / 1m / 1a):** variazione assoluta e percentuale del valore su 1 giorno (da chiusura precedente), 1 mese e 1 anno (dallo storico mensile).
-- **Benchmark:** rendimento simulato di un indice (NASDAQ/S&P) investendo lo stesso flusso netto (acquisti − vendite) del portafoglio, per confronto. *(Pianificato.)*
+- **Benchmark:** rendimento simulato di un indice (NASDAQ/S&P) investendo lo stesso flusso netto (acquisti − vendite) del portafoglio, per confronto. Importato dall'Excel nella serie `portfolioHistory` e mostrato nella pagina **Rendimento**.
+- **Track record:** storico mensile del portafoglio (valore, investito, realizzato cumulato, P/L aperto, dividendi) più i valori dei benchmark; collezione `portfolioHistory`, alimenta la pagina Rendimento.
+- **Rendimento totale:** somma di plusvalenze **realizzate** (posizioni chiuse) + **dividendi** + P/L **non realizzato** (posizioni aperte); il P/L mostrato nel Portafoglio è solo la componente non realizzata.
 - **Monogramma:** "logo" segnaposto di un titolo (iniziali del simbolo su sfondo colorato), in assenza di loghi reali.
 - **Owner / intestatario:** a chi appartiene una voce del patrimonio: `antonio`, `michela` o `shared` (condiviso).

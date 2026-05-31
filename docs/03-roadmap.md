@@ -6,7 +6,7 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
 - **Fase 0 — Fondamenta:** ✅ **completata** — Angular 20 zoneless, Firebase (Auth + Firestore offline), guscio Tauri, design system dark/light, deploy su Firebase Hosting.
 - **Fase 1 — MVP:** ✅ **completata** — snapshot mensili (crea/modifica/elimina, precompilati), import dello storico dall'Excel, dashboard (netto + variazione + grafico + ripartizione), portafoglio con quotazioni.
 - **Fase 2 — Transazioni e P&L:** ✅ **completata** — acquisto/vendita (prezzo = importo/quantità), dividendi + contatore, P&L da **costo medio**, movimenti con eliminazione. *(Depositi/prelievi sui conti esclusi per scelta del committente: a fine mese si inserisce il saldo dei conti nello snapshot, e tanto basta.)*
-- **Fase 3 — Avanzate:** 🔶 **parziale** — multivaluta + cambio in EUR, quote multi-provider (Finnhub/Alpha Vantage/manuale), prezzo manuale per BTP/non coperti, allocazione a torta, grafico interattivo, **benchmark S&P/NASDAQ** (pagina Rendimento). *Manca:* **indicatori** (es. Sharpe).
+- **Fase 3 — Avanzate:** ✅ **completata** — multivaluta + cambio in EUR, quote multi-provider (Finnhub/Alpha Vantage/manuale), prezzo manuale per BTP/non coperti, allocazione a torta (per titolo e per classe), grafico interattivo, gestione conti/voci, **import dividendi/track-record/plusvalenze realizzate dall'Excel**, pagina **Rendimento** con **benchmark S&P/NASDAQ** (serie `portfolioHistory`) e **indicatori** (CAGR, volatilità, Sharpe, max drawdown), app Windows pubblicata via **GitHub Releases** (CI Tauri).
 - **Qualità — Test:** 🔶 **da avviare** — suite di test sulla logica finanziaria; piano e checklist in `docs/08-testing.md`.
 
 > **Fuori ambito (scelta del committente):** depositi/prelievi sui conti, **report/export**, **dettaglio del fondo crypto** (la voce "Crypto" resta nel patrimonio, ma senza drill-down dedicato).
@@ -37,7 +37,7 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
 ## Fase 3 — Avanzate
 - Supporto **BTP/bond** con override manuale del prezzo. ✅
 - Multivaluta avanzata e gestione cambi. ✅
-- **Asset allocation** ✅ e **indicatori** (es. indice di Sharpe). ⬅️ prossimo
+- **Asset allocation** ✅ e **indicatori** (CAGR, volatilità, Sharpe, max drawdown). ✅
 - ~~Report ed export.~~ *(fuori ambito)*
 - **Stop-gate.**
 
