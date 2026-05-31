@@ -2,11 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
 import { formatEur, formatSignedEur } from '../../core/money/format';
 import { Owner, OWNER_LABELS, OWNERS } from '../../core/models';
+import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
 const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' });
 
 @Component({
   selector: 'app-dashboard',
+  imports: [ValueChartComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -36,18 +38,11 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
               <span class="muted">12 mesi</span>
             }
           </div>
+        </div>
 
-          @if (chart(); as c) {
-            <svg
-              class="spark"
-              [attr.viewBox]="'0 0 ' + c.w + ' ' + c.h"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <path [attr.d]="c.area" class="spark-area" />
-              <path [attr.d]="c.line" class="spark-line" />
-            </svg>
-          }
+        <div class="card">
+          <span class="label">Andamento patrimonio</span>
+          <app-value-chart [points]="series()" />
         </div>
 
         <h2 class="section-title">Per intestatario</h2>
@@ -104,23 +99,6 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
       }
       .deltas .num {
         font-weight: var(--fw-semibold);
-      }
-      .spark {
-        width: 100%;
-        height: 120px;
-        margin-top: var(--space-4);
-        overflow: visible;
-      }
-      .spark-line {
-        fill: none;
-        stroke: var(--accent);
-        stroke-width: 2;
-        vector-effect: non-scaling-stroke;
-      }
-      .spark-area {
-        fill: var(--accent-soft);
-        stroke: none;
-        opacity: 0.7;
       }
       .section-title {
         margin: var(--space-6) 0 var(--space-3);
@@ -229,30 +207,9 @@ export class DashboardPage {
       .map((b) => ({ ...b, pct: Math.round((b.value / total) * 100) }));
   });
 
-  protected readonly chart = computed(() => {
-    const pts = this.snapshots();
-    if (pts.length < 2) return null;
-    const vals = pts.map((p) => p.netWorth);
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    const w = 600;
-    const h = 120;
-    const pad = 6;
-    const range = max - min || 1;
-    const coords = pts.map((p, i) => {
-      const x = pad + (i / (pts.length - 1)) * (w - 2 * pad);
-      const y = pad + (1 - (p.netWorth - min) / range) * (h - 2 * pad);
-      return [x, y] as const;
-    });
-    const line = coords
-      .map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`)
-      .join(' ');
-    const area =
-      `M${pad} ${(h - pad).toFixed(1)} ` +
-      coords.map(([x, y]) => `L${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') +
-      ` L${(w - pad).toFixed(1)} ${(h - pad).toFixed(1)} Z`;
-    return { line, area, w, h };
-  });
+  protected readonly series = computed<ChartPoint[]>(() =>
+    this.snapshots().map((s) => ({ date: s.date, value: s.netWorth })),
+  );
 
   protected monthLabel(): string {
     const l = this.latest();

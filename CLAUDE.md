@@ -14,7 +14,7 @@ Due target dalla **stessa codebase**: **desktop Windows** e **Android**.
 - **Resta 100% gratuito.** Backend Firebase piano **Spark** (nessuna carta). **Vietato** introdurre Cloud Functions o qualsiasi servizio che richieda il piano Blaze. Tutta la logica è **lato client**.
 - **Quotazioni: niente streaming.** Si aggiornano solo (1) all'apertura dell'app e (2) con un pulsante "Aggiorna" manuale. Le quote vanno salvate in Firestore con timestamp; all'avvio si rifà la fetch solo se la quota è più vecchia di una soglia configurabile.
 - **API key mai nel repository.** Vanno in un file di ambiente locale ignorato da git (vedi `.env.example`).
-- **Dati finanziari fuori da git.** L'Excel dell'utente (`data/*.xlsx`) è gitignorato: non committarlo mai.
+- **Dati finanziari fuori da git.** L'Excel dell'utente (es. `Balance Sheet.xlsx`, anche in root) e i seed generati (`data/*.json`) sono gitignorati (pattern `*.xlsx`/`*.xls`/`data/*.json`): non committarli mai.
 - Valuta base **EUR**.
 
 ## Metodo di lavoro (IMPORTANTE)

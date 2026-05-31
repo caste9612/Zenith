@@ -1,6 +1,12 @@
 # 03 — Roadmap incrementale
 
-Si procede **una fase alla volta**. **Alla fine di ogni fase, fermati e attendi l'approvazione esplicita** del committente prima di iniziare la successiva. Non anticipare lavoro delle fasi seguenti.
+Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su richiesta del committente, lo sviluppo procede in autonomia sulle funzioni chiare; ci si confronta sui punti che richiedono decisioni o credenziali.)*
+
+## Stato attuale (aggiornato)
+- **Fase 0 — Fondamenta:** ✅ **completata** — Angular 20 zoneless, Firebase (Auth + Firestore offline), guscio Tauri, design system dark/light, deploy su Firebase Hosting.
+- **Fase 1 — MVP:** ✅ **completata** — snapshot mensili (crea/modifica/elimina, precompilati), import dello storico dall'Excel, dashboard (netto + variazione + grafico + ripartizione), portafoglio con quotazioni.
+- **Fase 2 — Transazioni e P&L:** 🔶 **in corso** — acquisto/vendita (prezzo = importo/quantità), dividendi + contatore, P&L da **costo medio**, movimenti con eliminazione. *Mancano:* depositi/prelievi sui conti.
+- **Fase 3 — Avanzate:** 🔶 **parziale** — multivaluta + cambio in EUR, quote multi-provider (Finnhub/Alpha Vantage/manuale), prezzo manuale per BTP/non coperti, allocazione a torta, grafico interattivo. *Mancano:* **benchmark NASDAQ/S&P**, indicatori (es. Sharpe), report/export, dettaglio fondo crypto.
 
 ## Fase 0 — Fondamenta
 1. Leggi `data/patrimonio.xlsx` (se manca, fermati e chiedilo).

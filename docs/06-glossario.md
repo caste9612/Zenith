@@ -12,8 +12,15 @@ Termini usati nel progetto, per allineare il linguaggio del codice e delle UI.
 - **Avg cost (prezzo medio di carico):** costo medio di acquisto di una posizione, base per il calcolo del P&L.
 - **Transaction (movimento):** acquisto, vendita (totale o parziale), dividendo, deposito, prelievo, valorizzazione.
 - **P&L (plus/minusvalenza):** guadagno o perdita di una posizione, dato dalla differenza tra valore corrente e costo di carico.
-- **QuoteProvider:** astrazione (strategy pattern) che recupera le quotazioni da una fonte (es. Finnhub per azioni/ETF, FX per i cambi).
+- **QuoteProvider / Fonte prezzo:** astrazione (strategy pattern) che recupera le quotazioni da una fonte impostabile **per strumento**: **Finnhub** (azioni/ETF USA), **Alpha Vantage** (mercati non-USA, dati EOD), **manuale**; in futuro **Yahoo** (solo app nativa). Più il provider **FX** per i cambi.
 - **Staleness (anzianità quota):** soglia oltre la quale, all'avvio, una quotazione in cache viene riaggiornata; serve a limitare le chiamate alle API.
-- **Valuta base:** EUR. Strumenti in altra valuta vengono convarti al cambio corrente.
+- **Valuta base:** EUR. Le quotazioni in altra valuta (es. USD) vengono **convertite in EUR** al cambio corrente prima della valorizzazione.
+- **Cambio (FX):** tasso di conversione verso EUR (fonte Frankfurter/BCE, fallback open.er-api), applicato alle quote non in euro.
 - **BTP / titoli di Stato italiani:** strumenti a **prezzo manuale** (nessuna API gratuita affidabile), con data dell'ultimo aggiornamento.
 - **Refresh quotazioni:** aggiornamento dei prezzi all'apertura dell'app e tramite pulsante manuale (mai in streaming).
+- **Costo medio (PMC):** metodo di calcolo del prezzo medio di carico dai movimenti (somma dei costi / quantità). Una vendita non lo modifica; riduce la quantità e realizza il P&L.
+- **Movimento di apertura:** transazione "buy" iniziale generata dall'import che rappresenta la posizione di partenza. Le posizioni (quantità + PMC) sono **ricalcolate dai movimenti**.
+- **Variazione (1g / 1m / 1a):** variazione assoluta e percentuale del valore su 1 giorno (da chiusura precedente), 1 mese e 1 anno (dallo storico mensile).
+- **Benchmark:** rendimento simulato di un indice (NASDAQ/S&P) investendo lo stesso flusso netto (acquisti − vendite) del portafoglio, per confronto. *(Pianificato.)*
+- **Monogramma:** "logo" segnaposto di un titolo (iniziali del simbolo su sfondo colorato), in assenza di loghi reali.
+- **Owner / intestatario:** a chi appartiene una voce del patrimonio: `antonio`, `michela` o `shared` (condiviso).

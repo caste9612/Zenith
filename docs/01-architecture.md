@@ -1,9 +1,11 @@
 # 01 — Architettura e decisioni tecniche
 
+> Stato: **implementato**. Questo documento riflette le scelte effettive.
+
 ## Stack scelto
-- **Frontend:** Angular (ultima LTS), TypeScript, standalone components, **Signals** per lo stato.
-- **Backend:** Firebase piano **Spark** (gratuito) → **Firestore** (dati) + **Firebase Auth** (email/password). Persistenza offline abilitata.
-- **Packaging:** **Tauri 2**, per generare l'eseguibile **Windows** e l'**APK Android** dalla stessa app web.
+- **Frontend:** Angular **20** (standalone, **Signals**, change detection **zoneless** + OnPush), TypeScript.
+- **Backend:** Firebase **12** piano **Spark** (gratuito) → **Firestore** (dati, cache offline persistente, letture realtime → Signal) + **Firebase Auth** (email/password).
+- **Packaging:** **Tauri 2.11** (eseguibile Windows + APK Android dalla stessa app web). Già attiva anche come **web app/PWA** su **Firebase Hosting** (gratuito su Spark).
 
 ## Perché questo stack
 - **Firebase è il vincolo dato.** L'SDK JavaScript di Firebase è l'unico maturo e identico su tutte le piattaforme (web, desktop via webview, Android). Questo evita il punto debole di altri approcci (es. Flutter, dove il supporto Firestore/Auth su Windows desktop è ancora incompleto).
@@ -15,13 +17,14 @@
 - Piano **Spark**: nessun metodo di pagamento richiesto. I limiti giornalieri di Firestore (decine di migliaia di letture/scritture al giorno) sono enormemente sopra il fabbisogno di un'app personale a utente singolo.
 - **Niente Cloud Functions** (richiederebbero il piano Blaze). Ogni elaborazione è lato client.
 
-## Strategia quotazioni
-- **Nessuno streaming.** Refresh solo all'apertura dell'app e su pulsante manuale.
-- Ogni quotazione è salvata in Firestore (`lastPrice`, `lastPriceAt`). All'avvio si rifà la fetch **solo se** la quota supera una soglia di anzianità configurabile (es. sessione di mercato). Questo minimizza le chiamate e sincronizza i due dispositivi.
-- Astrazione **`QuoteProvider`** (strategy pattern) per cambiare/aggiungere fonti senza toccare il resto.
-  - **Finnhub** (free tier ~60 chiamate/min): azioni/ETF.
-  - **FX gratuita** (es. Frankfurter / dati BCE, senza chiave): EUR/USD e altri cambi.
-  - **BTP / titoli di Stato italiani**: non esiste un'API gratuita affidabile → **valore manuale** per posizione, con data di aggiornamento. Il modello deve permettere di aggiungere in futuro una fonte dedicata senza refactoring.
+## Strategia quotazioni (implementata)
+- **Nessuno streaming.** Refresh solo all'avvio (se la quota è "stale") e su pulsante "Aggiorna". Cache in Firestore (`lastPrice`, `prevClose`, `lastPriceAt`); soglia di *staleness* configurabile. Questo minimizza le chiamate e sincronizza i dispositivi.
+- Astrazione **`QuoteProvider`** (strategy pattern), con **fonte impostabile per singolo strumento**:
+  - **Finnhub** (free): azioni/ETF **USA**, quasi-realtime (prezzo + chiusura precedente → variazione 1 giorno). Funziona dal browser (CORS ok).
+  - **Alpha Vantage** (free, ~25 req/giorno): mercati **non-USA** (Euronext, Londra…), dati **EOD**. Funziona dal browser (CORS ok). Richiede chiave gratuita.
+  - **Manuale**: prezzo inserito a mano (BTP/bond, titoli delistati, o mercati non coperti gratis), con data di aggiornamento.
+  - **Yahoo Finance** *(pianificato)*: copre tutto gratis ma è **bloccato dalla CORS nel browser** → utilizzabile solo nell'**app nativa Tauri** (plugin HTTP, senza CORS), in futuro.
+- **Attenzione CORS:** nella web app funzionano solo le fonti che inviano header CORS (Finnhub, Alpha Vantage, Frankfurter). Le altre (Yahoo) restano per l'app nativa. Niente proxy (= niente Cloud Functions = si resta gratis).
 
-## Multivaluta
-Valuta base **EUR**. Gli strumenti in altra valuta (es. USD) sono convertiti al cambio corrente recuperato dal provider FX.
+## Multivaluta (implementata)
+Valuta base **EUR**. Le quotazioni in altra valuta (es. USD) vengono **convertite in EUR** al cambio corrente, recuperato al refresh, **prima della valorizzazione** (così il valore è coerente col costo di carico, in EUR). Fonte cambio: **Frankfurter** (dati BCE, dominio `frankfurter.dev`) con fallback `open.er-api.com`; entrambe senza chiave e CORS-ok.
