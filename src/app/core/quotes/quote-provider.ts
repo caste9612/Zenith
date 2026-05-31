@@ -12,4 +12,10 @@ export interface QuoteProvider {
   supports(instrument: Instrument): boolean;
   /** Ritorna la quotazione, o null se non disponibile. */
   getQuote(instrument: Instrument): Promise<Quote | null>;
+  /**
+   * Intervallo minimo (ms) tra due chiamate consecutive a questo provider, per rispettare i
+   * limiti di burst del piano free (es. Alpha Vantage: max 1 richiesta/secondo). Se assente o 0,
+   * nessuna attesa. Il refresh distanzia le chiamate allo stesso provider di conseguenza.
+   */
+  readonly minIntervalMs?: number;
 }

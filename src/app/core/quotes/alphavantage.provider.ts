@@ -14,6 +14,8 @@ import { QuoteProvider } from './quote-provider';
 @Injectable({ providedIn: 'root' })
 export class AlphaVantageProvider implements QuoteProvider {
   readonly id = 'alphavantage';
+  /** Free tier: max 1 richiesta/secondo (oltre al limite di 25/giorno). Distanzio di 1,3 s. */
+  readonly minIntervalMs = 1300;
 
   supports(instrument: Instrument): boolean {
     return (

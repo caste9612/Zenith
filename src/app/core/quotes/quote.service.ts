@@ -43,6 +43,7 @@ export class QuoteService {
   async refreshAll(): Promise<RefreshResult> {
     const instruments = await this.instrumentsRepo.list();
     const rates = new Map<string, number>([['EUR', 1]]); // valuta → tasso verso EUR (cache per refresh)
+    const lastCallAt = new Map<string, number>(); // providerId → timestamp ultima chiamata
     let updated = 0;
     const failed: string[] = [];
 
@@ -50,6 +51,14 @@ export class QuoteService {
       const provider = this.providerFor(inst);
       if (!provider) continue; // manuali / non supportati: lasciati intatti
       try {
+        // Rispetta il limite di burst del provider (es. Alpha Vantage: 1 req/secondo):
+        // distanzia le chiamate consecutive allo stesso provider.
+        const minInterval = provider.minIntervalMs ?? 0;
+        if (minInterval > 0) {
+          const wait = minInterval - (Date.now() - (lastCallAt.get(provider.id) ?? 0));
+          if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        }
+        lastCallAt.set(provider.id, Date.now());
         const q = await provider.getQuote(inst);
         if (!q || q.price <= 0) {
           failed.push(inst.symbol);
