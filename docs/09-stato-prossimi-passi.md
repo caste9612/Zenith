@@ -37,15 +37,11 @@
 
 ## Prossimi passi (ordine consigliato)
 
-1. **Runner di test (ChromeHeadless).** Far girare davvero la suite su PC e in CI.
-   - Non c'è `karma.conf.js` (si usa il default di `@angular/build:karma`). Aggiungere un `karma.conf.js` con un browser custom `ChromeHeadlessNoSandbox` (flags `--no-sandbox --headless --disable-gpu`) **oppure** lanciare `ng test --watch=false --browsers=ChromeHeadless`.
-   - Aggiungere uno script `"test:ci": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox"` in `package.json`.
-   - Aggiungere uno **step di test** al workflow GitHub Actions (oggi c'è solo `.github/workflows/release.yml` per la build Tauri).
-   - Atteso: `metrics.spec.ts` + `format.spec.ts` verdi (qui, in headless senza Chrome, sono stati verificati a parte: **19/19**).
-2. **Ampliare la suite** secondo la checklist di `docs/08-testing.md`, in quest'ordine di priorità:
-   - `core/portfolio/portfolio.service.ts` — **PMC / P&L** (costo medio, vendite parziali/totali, dividendi, `deleteTransaction`).
-   - `core/quotes/quote.service.ts` + `fx.provider.ts` — **staleness**, conversione **EUR**, rate limit, fallback FX (con mock di `platformFetch`).
-   - **Snapshot / patrimonio netto** — somma asset − passività, aggregati per owner/classe, precompilazione.
+1. ✅ **Runner di test (ChromeHeadless) — FATTO.** `npm run test:ci` (= `config:gen` + `ng test --watch=false --browsers=ChromeHeadless`) gira in locale e in **CI** (`.github/workflows/test.yml`, su push a `main` e su PR). Scelto il launcher **ChromeHeadless** integrato: passare un `karma.conf.js` custom al builder `@angular/build:karma` disattivava l'iniezione di Jasmine (`describe is not defined`), e `--no-sandbox` non serve sui runner non-root. I service zoneless si testano con `TestBed` + `provideZonelessChangeDetection()` e repository finti.
+2. **Ampliare la suite** secondo la checklist di `docs/08-testing.md`:
+   - ✅ `core/portfolio/portfolio.service.ts` — **PMC / P&L** (costo medio, vendite parziali/totali, dividendi, `deleteTransaction`, `currentValueEur`) → `portfolio.service.spec.ts`.
+   - ✅ `core/quotes/quote.service.ts` — **staleness**, conversione **EUR**, lista `failed`, selezione provider → `quote.service.spec.ts`. **Resta:** `fx.provider.ts` e il rate-limit `minIntervalMs` (servono mock di `platformFetch`/timer).
+   - **Snapshot / patrimonio netto** — somma asset − passività, aggregati per owner/classe, precompilazione. ⬅️ prossimo
 3. **Validazione locale sull'Excel.** Quando carichi l'Excel in `data/`: `npm run import:parse` → confrontare i totali calcolati dall'app con quelli reali (fixture reali gitignorate, vedi `08-testing.md`).
 4. **(Opzionale) Indicatori sul patrimonio netto.** Estendere gli indicatori anche alla serie degli **snapshot** (non solo al portafoglio titoli).
 

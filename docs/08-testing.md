@@ -18,10 +18,10 @@ vincolo di progetto «dati finanziari fuori da git».
 2. **Suite di validazione locale** (dati reali, gitignorati) — confronta gli aggregati calcolati dall'app con i **totali dell'Excel**; si esegue in locale prima del push quando cambiano import o logica di calcolo.
 
 ## Runner e setup
-- **Karma + Jasmine** sono già configurati (`ng test`, `tsconfig.spec.json`, `app.spec.ts`).
-- TODO setup:
-  - configurazione **ChromeHeadless** per esecuzione in CI/headless (no UI);
-  - helper comuni per il mock di `platformFetch` (quotazioni/FX) e dei repository Firestore;
+- **Karma + Jasmine** configurati (`ng test`, `tsconfig.spec.json`, `app.spec.ts`).
+- **Headless attivo** ✅: `npm run test:ci` (= `config:gen` + `ng test --watch=false --browsers=ChromeHeadless`). Gira in locale e in **CI** (`.github/workflows/test.yml`, a ogni push su `main` e su PR). I service che usano `inject()` si testano con `TestBed` + `provideZonelessChangeDetection()` (l'app è zoneless) e **repository finti in memoria** (vedi `portfolio.service.spec.ts`).
+- TODO setup ancora aperti:
+  - helper comuni per il mock di `platformFetch` a livello di modulo (per testare i provider Finnhub/Alpha Vantage e l'FX direttamente);
   - factory di fixture sintetiche (`makeInstrument`, `makeTransaction`, `makeSnapshot`, …).
 - (Valutazione futura, non ora) migrazione a Web Test Runner / Vitest se Karma dà attrito.
 
@@ -29,24 +29,24 @@ vincolo di progetto «dati finanziari fuori da git».
 
 ### `core/money/format.ts`
 - [ ] `formatEur` — interi, con decimali, zero, negativi, separatori `it-IT`.
-- [ ] `formatSignedEur` — segno `+/−`, zero.
-- [ ] `formatPercent` — frazione → %, segno, arrotondamento.
-- [ ] `gainClass` — `gain` / `loss` / `flat` (confine a zero).
+- [x] `formatSignedEur` — segno `+/−`, zero.
+- [x] `formatPercent` — frazione → %, segno, arrotondamento.
+- [x] `gainClass` — `gain` / `loss` / `flat` (confine a zero).
 
-### `core/portfolio/portfolio.service.ts` (cuore della logica)
-- [ ] `recompute` — **PMC** da più acquisti (costo medio ponderato).
-- [ ] acquisti successivi → aggiornamento corretto del PMC.
-- [ ] **vendita parziale** — riduce la quantità, **non** cambia il PMC, P&L realizzato corretto.
-- [ ] **vendita totale** — quantità 0 → la posizione viene rimossa.
-- [ ] **dividendi** — non toccano quantità/PMC; contatore corretto.
-- [ ] `deleteTransaction` — ricalcolo coerente dopo l'eliminazione.
-- [ ] `currentValueEur` — quantità × prezzo, con prezzo **manuale** vs **auto**.
+### `core/portfolio/portfolio.service.ts` (cuore della logica) — `portfolio.service.spec.ts`
+- [x] `recompute` — **PMC** da più acquisti (costo medio ponderato).
+- [x] acquisti successivi → aggiornamento corretto del PMC.
+- [x] **vendita parziale** — riduce la quantità, **non** cambia il PMC.
+- [x] **vendita totale** — quantità 0 → la posizione viene rimossa.
+- [x] **dividendi** — non toccano quantità/PMC; restano come movimento.
+- [x] `deleteTransaction` — ricalcolo coerente dopo l'eliminazione.
+- [x] `currentValueEur` — quantità × prezzo (lastPrice → manuale → PMC).
 - [ ] casi limite — quantità 0, vendita > posseduto (errore atteso).
 
-### `core/quotes/quote.service.ts`
-- [ ] `isStale` — sotto/sopra soglia, confine esatto, `lastPriceAt` mancante.
-- [ ] `refreshAll` — conversione in **EUR** via FX, rispetto di `minIntervalMs` (con mock dei timer), lista `failed`, **non** sovrascrive i simboli non risolti.
-- [ ] selezione provider (`supports`).
+### `core/quotes/quote.service.ts` — `quote.service.spec.ts`
+- [x] `isStale` — sotto/sopra soglia, confine esatto, `lastPriceAt` mancante.
+- [x] `refreshAll` — conversione in **EUR** via FX, lista `failed`, **non** sovrascrive i simboli non risolti. *(Resta: `minIntervalMs` con mock dei timer.)*
+- [x] selezione provider (`supports`).
 
 ### `core/quotes/fx.provider.ts`
 - [ ] `getRate` — stessa valuta → `1`, parsing risposta **Frankfurter**, **fallback** `open.er-api`, errore → `null` (mock di `platformFetch`).
