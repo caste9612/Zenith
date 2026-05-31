@@ -1,0 +1,30 @@
+name: test
+
+# Esegue la suite di test (Karma + Jasmine, ChromeHeadless) a ogni push su main e su PR.
+# I test usano fixture sintetiche e repository finti: niente Firebase reale né rete.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ChromeHeadless: il runner ubuntu-latest ha Google Chrome preinstallato.
+      - name: Run tests
+        run: npm run test:ci
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
