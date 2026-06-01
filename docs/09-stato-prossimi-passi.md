@@ -30,13 +30,13 @@
 7. **Deploy web** (manuale): `npm run deploy:hosting`. **App Windows**: push di un tag `v*` →
    GitHub Action builda e pubblica l'installer nei Releases.
 
-## Stato produzione — DEPLOY IN SOSPESO ⚠️
+## Stato produzione — ALLINEATA ✅
 
-- Sito: **https://zenith-5768d.web.app** · App Windows: **https://github.com/caste9612/Zenith/releases** (v0.1.0, `.msi`/`.exe`).
-- L'ultimo deploy hosting copre **icona + dividendi + dashboard**. **Non** sono ancora in
-  produzione: **pagina Rendimento** completa, **navbar nuova**, **indicatori**, refactor netto, test.
-- **Azione**: per allineare la produzione a `main` → `npm run deploy:hosting` (i test/refactor non
-  cambiano la UI, ma le feature sì). È l'unica cosa davvero in sospeso.
+- Sito: **https://zenith-5768d.web.app** — **allineato a `main`** (navbar nuova, pagina Rendimento +
+  benchmark + indicatori, dividendi, gestione conti, icona). App Windows:
+  **https://github.com/caste9612/Zenith/releases** (v0.1.0, `.msi`/`.exe`).
+- Per ri-deployare dopo nuove modifiche: `npm run deploy:hosting` (build + Firebase Hosting).
+  App Windows: push di un tag `v*` → GitHub Action builda e pubblica l'installer.
 
 ## Fatto nelle sessioni recenti (oltre al handoff precedente)
 
@@ -83,15 +83,17 @@
 
 ## Prossimi passi (ordine consigliato)
 
-1. **(Decisione) Deploy** della versione unificata: `npm run deploy:hosting`. Unica cosa davvero in sospeso.
-2. **Validazione locale sull'Excel** (oracolo): con l'Excel in `data/`, `npm run import:parse` →
+> Produzione già allineata (deploy fatto). Da qui in poi, dopo modifiche significative:
+> `npm run deploy:hosting`.
+
+1. **Validazione locale sull'Excel** (oracolo): con l'Excel in `data/`, `npm run import:parse` →
    confrontare i totali calcolati dall'app con quelli reali (fixture reali gitignorate; vedi
    `08-testing.md`). Da fare dopo gli import (dividendi/track record).
-3. **(Opzionale) Altri test**: casi `formatEur` (interi/decimali), altri test di componente
+2. **(Opzionale) Altri test**: casi `formatEur` (interi/decimali), altri test di componente
    (grafici), `minIntervalMs` con **mock dei timer** al posto del test a timer reali.
-4. **(Opzionale) Indicatori sul patrimonio netto**: estendere CAGR/volatilità/… anche alla serie
+3. **(Opzionale) Indicatori sul patrimonio netto**: estendere CAGR/volatilità/… anche alla serie
    degli **snapshot** del netto (non solo ai titoli).
-5. **(Futuro) Quotazioni europee complete**: Yahoo nell'app nativa Tauri per TIBN/CKH ecc.
+4. **(Futuro) Quotazioni europee complete**: Yahoo nell'app nativa Tauri per TIBN/CKH ecc.
 
 ## Mappa rapida dei file chiave
 
