@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Zenith",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "com.zenith.app",
   "build": {
     "frontendDist": "../dist/zenith/browser",
@@ -27,6 +27,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": false,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -37,6 +38,12 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIyRUMyQzVBMDE2N0YwNTQKUldSVThHY0JXaXpzSW5TN2dudEEzYzRwMCtUOFhYR2RMNk5yY2ZQQUQzOSswZWdMajJITWJub2MK",
+      "endpoints": ["https://github.com/caste9612/Zenith/releases/latest/download/latest.json"]
     }
   }
 }
