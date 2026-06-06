@@ -27,7 +27,7 @@
    release Windows). `.env.example` elenca i campi.
 3. `npm start` → genera la config + `ng serve` su http://localhost:4200 (login con le credenziali utente).
 4. `npm run build` → build in `dist/zenith/browser`.
-5. `npm run test:ci` → **95 test** headless (richiede **Chrome** installato).
+5. `npm run test:ci` → **96 test** headless (richiede **Chrome** installato).
 6. **Import dall'Excel** (Excel gitignorato, es. `data/Balance Sheet.xlsx`):
    `import:parse` · `import:seed` · `import:openings` · `import:dividends` · `import:trackrecord`.
    Dopo `import:parse`: `npm run validate:oracle` confronta i totali calcolati con l'Excel
@@ -93,6 +93,25 @@
   pagina Rendimento; helper puro `groupRealizedByYear` (testato). ⚠️ **Da popolare**:
   `npm run import:trades` con `SEED_*` in `.env` (oggi vuoti) — finché non lo lanci, la sezione non compare.
 - **Piano D — Cash flow / risparmio**: prossimo (richiede `SEED_*` in `.env` per l'import).
+
+## Fatto in questa sessione — Auto-updater (app Windows)
+
+> L'app desktop si auto-aggiorna dai **GitHub Releases** (resta gratis). Configurato tutto; per
+> attivarlo davvero resta da **armare la firma** (1 Secret) alla release successiva.
+
+- **Tauri updater** (`tauri-plugin-updater`, solo desktop) + `process` per il riavvio; capability
+  `capabilities/desktop.json`; `plugins.updater` in `tauri.conf.json` con **pubkey** ed **endpoint**
+  (`releases/latest/download/latest.json`). Frontend: `core/platform/updater.ts` (check non bloccante
+  all'avvio, gated Tauri, import dinamici) + banner "Aggiorna e riavvia" nella shell. Versione → **0.2.0**.
+- **Release v0.2.0**: tag `v0.2.0`. `createUpdaterArtifacts` è **OFF** qui → builda con i soli
+  **segreti Firebase** già nei GitHub Secrets (niente firma). L'installazione 0.1.0 → 0.2.0 è
+  **manuale** una tantum (la 0.1.0 non ha l'updater). L'updater nella 0.2.0 è attivo ma "dormiente"
+  (l'endpoint non ha ancora un `latest.json`).
+- **Per ARMARE l'auto-update (dalla v0.3.0):** (1) aggiungi 2 GitHub Secrets —
+  `TAURI_SIGNING_PRIVATE_KEY` = contenuto di `~/.tauri/zenith-updater.key` (privata, **mai** nel repo)
+  e `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = **vuota**; (2) metti `createUpdaterArtifacts: true` in
+  `tauri.conf.json`; (3) tag `v0.3.0`. Da lì la 0.2.0 trova la 0.3.0 e si aggiorna da sola. La
+  **chiave pubblica** è già in config; la **privata** sta in `~/.tauri/zenith-updater.key` (fuori dal repo).
 
 ## Fatto nella sessione precedente (i 4 "prossimi passi" del handoff precedente)
 
