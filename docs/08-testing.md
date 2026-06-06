@@ -47,7 +47,11 @@ vincolo di progetto «dati finanziari fuori da git».
 - [x] `isStale` — sotto/sopra soglia, confine esatto, `lastPriceAt` mancante.
 - [x] `refreshAll` — conversione in **EUR** via FX, lista `failed`, **non** sovrascrive i simboli non risolti.
 - [x] `minIntervalMs` — rate limit con **timer finti** (`jasmine.clock` + drain microtask): distanza esatta tra chiamate.
-- [x] selezione provider (`supports`).
+- [x] selezione provider (`providersFor`) e **catena con fallback**: il primario fallisce → prova il successivo; `failed` solo se falliscono **tutti**.
+- [x] conversione con la **valuta della quotazione** (`q.currency`), non quella salvata sullo strumento.
+
+### `core/quotes/quote-provider.ts` — `quote-provider.spec.ts`
+- [x] `symbolForProvider` — simbolo per provider dalla mappa `providerSymbols`; ripiego su `symbol` solo per il provider primario; valori vuoti/spazi ignorati; trim. Abilita la catena multi-provider.
 
 ### `core/quotes/fx.provider.ts` — `fx.provider.spec.ts`
 - [x] `getRate` — stessa valuta → `1`, parsing risposta **Frankfurter**, **fallback** `open.er-api`, errore → `null` (spy su `window.fetch`, usato da `platformFetch` fuori da Tauri).
@@ -55,6 +59,10 @@ vincolo di progetto «dati finanziari fuori da git».
 ### `core/quotes/yahoo.provider.ts` — `yahoo.provider.spec.ts`
 - [x] `parseYahooQuote` (puro) — prezzo/`prevClose`/valuta dalla risposta `chart`; `previousClose` di fallback; `prevClose` assente → `undefined`; risposta senza risultati o prezzo ≤ 0 → `null`.
 - [x] `supports` — gating su **Tauri**: nel browser sempre `false` (CORS); dentro Tauri vero per equity/ETF marcati `yahoo`, falso per provider/tipo diversi.
+
+### `core/quotes/symbol-search.ts` — `symbol-search.spec.ts`
+- [x] `parseYahooSearch` / `parseFinnhubSearch` (puri) — tengono solo azioni/ETF, mappano il tipo, ripiego sul nome; risposte vuote → `[]`.
+- [x] `mergeMatches` — dedup per `provider:symbol` mantenendo l'ordine, rispetto del limite.
 
 ### Snapshot / patrimonio netto — `core/balance/net-worth.spec.ts`
 - [x] `computeNetWorth` = somma asset − passività (`isLiability`).

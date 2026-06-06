@@ -4,7 +4,8 @@
 > partenza** di ogni sessione (leggi questo per primo). **Aggiornare alla fine di ogni sessione.**
 > Ultimo aggiornamento dopo le sessioni: audit Excel, icona, dividendi, pagina Rendimento +
 > benchmark, gestione conti, release Windows, refactor patrimonio netto, suite di test + CI,
-> **validazione oracolo Excel + indicatori sul patrimonio netto + provider Yahoo (app nativa)**.
+> validazione oracolo Excel + indicatori sul patrimonio netto + provider Yahoo (app nativa),
+> **catena quotazioni multi-provider con fallback + ricerca titoli multi-provider**.
 
 ## Dove si lavora (branch)
 
@@ -25,7 +26,7 @@
    release Windows). `.env.example` elenca i campi.
 3. `npm start` → genera la config + `ng serve` su http://localhost:4200 (login con le credenziali utente).
 4. `npm run build` → build in `dist/zenith/browser`.
-5. `npm run test:ci` → **69 test** headless (richiede **Chrome** installato).
+5. `npm run test:ci` → **84 test** headless (richiede **Chrome** installato).
 6. **Import dall'Excel** (Excel gitignorato, es. `data/Balance Sheet.xlsx`):
    `import:parse` · `import:seed` · `import:openings` · `import:dividends` · `import:trackrecord`.
    Dopo `import:parse`: `npm run validate:oracle` confronta i totali calcolati con l'Excel
@@ -35,15 +36,40 @@
 
 ## Stato produzione — RE-DEPLOY IN SOSPESO ⏳
 
-- Sito: **https://zenith-5768d.web.app** — **indietro rispetto a `main`**: manca la nuova sezione
-  **Indicatori** della dashboard (crescita annua / volatilità / max drawdown del patrimonio).
+- Sito: **https://zenith-5768d.web.app** — **indietro rispetto a `main`**: mancano la sezione
+  **Indicatori** della dashboard (crescita annua / volatilità / max drawdown) e il nuovo **editor
+  strumento con ricerca multi-provider**.
   Per allinearlo: **`npm run deploy:hosting`** (build + Firebase Hosting). Il resto (navbar, pagina
   Rendimento + benchmark, dividendi, gestione conti, icona) è già online.
 - App Windows: **https://github.com/caste9612/Zenith/releases** (v0.1.0, `.msi`/`.exe`). Il nuovo
   **provider Yahoo** è attivo solo nell'app nativa (CORS): per provarlo serve una build Tauri (e i
   titoli vanno marcati `provider: 'yahoo'`). Per pubblicare: push di un tag `v*` → GitHub Action.
 
-## Fatto in questa sessione (i 4 "prossimi passi" del handoff precedente)
+## Fatto in questa sessione — quotazioni multi-provider + ricerca
+
+> Richiesta: poter sfruttare **tutti** i provider insieme (più copertura, meno rischio di esaurire la
+> quota di una fonte) e una **ricerca** che aiuti a scegliere fonte+simbolo. Fatto a fasi (84 test
+> verdi, pushate su `main`). Resta la verifica **on-device** (Yahoo gira solo in Tauri).
+
+- **Simboli per-provider** (`Instrument.providerSymbols`) + helper `symbolForProvider`: lo stesso
+  titolo può avere ticker diversi per fonte (`FLOW.AS` Yahoo, `FLOW.AMS` Alpha Vantage). I provider
+  Finnhub/Alpha Vantage/Yahoo dichiarano `supports()` in base alla **capacità** di quotare. Additivo
+  e retro-compatibile.
+- **Catena multi-provider con fallback** (`QuoteService`): prova il provider primario, poi gli altri
+  in ordine quota-friendly (**Yahoo nativo → Finnhub → Alpha Vantage** per ultimo, quota 25/g). Un
+  titolo va in `failed` solo se **tutti** falliscono. **Fix valuta**: la conversione in EUR usa la
+  valuta della **quotazione** (`q.currency`), non quella salvata → CKH (HKD) e TIBN (CHF) corretti.
+- **Ricerca titoli** (`SymbolSearchService`): cerca su **Yahoo** (globale, app nativa) + **Finnhub**
+  (USA, anche browser); propone candidati {provider, simbolo, nome, borsa}. Alpha Vantage escluso (la
+  sua ricerca consuma quota). La pagina **instrument-edit** ha box di ricerca, **Yahoo** tra le fonti
+  e i **simboli di fallback** per più provider.
+- **Verifica simboli** (via API Yahoo): confermati **FLOW.AS, ACOMO.AS, 0001.HK** (CK Hutchison, HKD),
+  **TIBN.SW** (Titlis Bergbahnen, CHF), **LBTYA**. **PHO** e **POL** restano da identificare (ticker
+  ambigui, nessun nome/ISIN nello storico) → si trovano con la nuova ricerca on-device.
+- **Test**: da 69 a **84** (`symbolForProvider`, catena/fallback, valuta-dalla-quotazione, parser di
+  ricerca Yahoo/Finnhub).
+
+## Fatto nella sessione precedente (i 4 "prossimi passi" del handoff precedente)
 
 - **Validazione oracolo Excel (punto 1)** ✅ — `npm run import:parse` su `data/Balance Sheet.xlsx`
   (63 mesi, feb 2021 → apr 2026). Nuovo script committato `scripts/validate/oracle.mjs`
@@ -105,8 +131,10 @@
 - **Indicatori**: rendimenti **time-weighted**; risk-free Sharpe **0%** (`RISK_FREE_ANNUAL`).
 - **Rendimento/benchmark** in **pagina dedicata** (`/portfolio/rendimento`), non dentro il portafoglio.
 - **Dividendi / track record / realizzato / benchmark** importati dall'Excel (dati storici, sola lettura).
-- **Quotazioni**: FLOW/ACOMO auto via Alpha Vantage; il resto **manuale** finché non si userà
-  **Yahoo** (solo nell'app nativa, senza CORS).
+- **Quotazioni multi-provider**: ogni titolo può avere simboli per più fonti (`providerSymbols`); il
+  refresh prova il **primario** poi gli altri in ordine quota-friendly (Yahoo nativo → Finnhub →
+  Alpha Vantage). **Yahoo** copre i mercati scoperti ma **solo nell'app nativa** (CORS); nel browser
+  restano Finnhub/Alpha Vantage. La conversione in EUR usa la valuta della quotazione.
 - Sviluppo su **`main`** con push diretto (autorizzato in queste sessioni).
 
 ## Prossimi passi (ordine consigliato)
@@ -115,10 +143,11 @@
 > Da qui:
 
 1. **Re-deploy web** (per mostrare gli **Indicatori** della dashboard): `npm run deploy:hosting`.
-2. **Verifica Yahoo on-device** (chiude il punto 4): build Tauri (tag `v*` o `npm run tauri:build`),
-   marcare i titoli europei scoperti (TIBN/CKH/PHO/POL) con `provider: 'yahoo'` e il simbolo Yahoo
-   corretto (es. `.AS`/`.MI`/`.L`), poi controllare le quote dal vivo. Se reggono, via i prezzi
-   manuali per quei titoli.
+2. **Assegna le fonti e verifica on-device** (chiude il punto 4): build Tauri (`npm run tauri:build`
+   o tag `v*`). Nell'**editor strumento** usa la **ricerca** per assegnare Yahoo ai titoli scoperti
+   (TIBN→`TIBN.SW`, CKH→`0001.HK`, FLOW→`FLOW.AS`, ACOMO→`ACOMO.AS`) e **identificare PHO/POL**. Poi
+   controlla le quote dal vivo (prezzo + conversione EUR per HKD/CHF). Se reggono, via i prezzi
+   manuali per quei titoli. Eventuale 2ª fonte come fallback dall'editor.
 3. **(Opzionale) Altri test di componente**: grafico multi-linea, dashboard, snapshot editor; e la
    precompilazione del nuovo snapshot dal mese precedente (logica nel componente).
 4. **(Opzionale) Indicatori del netto — rifiniture**: per ora sono cumulativi sull'intera serie;
@@ -130,7 +159,7 @@
 - `src/app/core/balance/net-worth.ts` — patrimonio netto (puro, **testato**).
 - `src/app/core/portfolio/metrics.ts` — indicatori (puro, **testato**).
 - `src/app/core/portfolio/portfolio.service.ts` — transazioni → posizioni, **PMC/P&L** (**testato**).
-- `src/app/core/quotes/*` — provider quotazioni (Finnhub/Alpha Vantage/**Yahoo** solo Tauri/manuale) + **FX** (**testati**); `minIntervalMs` per il rate limit. `yahoo.provider.ts` con `parseYahooQuote` puro.
+- `src/app/core/quotes/*` — provider (Finnhub/Alpha Vantage/**Yahoo** solo Tauri/manuale) + **FX** (**testati**); `quote-provider.ts` (`symbolForProvider`), `quote.service.ts` (**catena multi-provider con fallback**, `minIntervalMs`), `symbol-search.ts` (**ricerca** Yahoo+Finnhub). `parseYahooQuote` puro.
 - `src/app/core/money/format.ts` — formattazione EUR/% (**testata**).
 - `src/app/features/portfolio/performance.ts` — pagina **Rendimento** + `shared/multi-line-chart.ts`.
 - `src/app/features/accounts/*` — **gestione conti/voci**.

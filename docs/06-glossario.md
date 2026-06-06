@@ -12,7 +12,9 @@ Termini usati nel progetto, per allineare il linguaggio del codice e delle UI.
 - **Avg cost (prezzo medio di carico):** costo medio di acquisto di una posizione, base per il calcolo del P&L.
 - **Transaction (movimento):** acquisto, vendita (totale o parziale), dividendo, deposito, prelievo, valorizzazione.
 - **P&L (plus/minusvalenza):** guadagno o perdita di una posizione, dato dalla differenza tra valore corrente e costo di carico.
-- **QuoteProvider / Fonte prezzo:** astrazione (strategy pattern) che recupera le quotazioni da una fonte impostabile **per strumento**: **Finnhub** (azioni/ETF USA), **Alpha Vantage** (mercati non-USA, dati EOD), **Yahoo** (quasi tutti i mercati, **solo app nativa Tauri** per via della CORS; da verificare on-device), **manuale**. Più il provider **FX** per i cambi.
+- **QuoteProvider / Fonte prezzo:** astrazione (strategy pattern) che recupera le quotazioni da una fonte impostabile **per strumento**: **Finnhub** (azioni/ETF USA), **Alpha Vantage** (mercati non-USA, dati EOD), **Yahoo** (quasi tutti i mercati, **solo app nativa Tauri** per via della CORS), **manuale**. Più il provider **FX** per i cambi. Uno strumento può avere **simboli per più provider** (`providerSymbols`) ed essere quotato da una **catena con fallback**.
+- **Catena di provider / fallback:** al refresh ogni titolo prova il provider primario e poi gli altri che sanno quotarlo, in ordine *quota-friendly* (Yahoo nativo → Finnhub → Alpha Vantage); finisce tra i non aggiornati solo se falliscono tutti.
+- **Ricerca titolo:** ricerca per nome/ticker su più provider (Yahoo nell'app nativa, Finnhub anche da browser) che propone candidati con simbolo, borsa e provider, per scegliere fonte e simbolo senza indovinare.
 - **Staleness (anzianità quota):** soglia oltre la quale, all'avvio, una quotazione in cache viene riaggiornata; serve a limitare le chiamate alle API.
 - **Valuta base:** EUR. Le quotazioni in altra valuta (es. USD) vengono **convertite in EUR** al cambio corrente prima della valorizzazione.
 - **Cambio (FX):** tasso di conversione verso EUR (fonte Frankfurter/BCE, fallback open.er-api), applicato alle quote non in euro.
