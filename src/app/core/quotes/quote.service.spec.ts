@@ -8,6 +8,14 @@ import { FxProvider } from './fx.provider';
 import { Quote } from './quote';
 import { QuoteService } from './quote.service';
 
+/**
+ * Svuota la coda dei microtask. jasmine.clock() finge setTimeout e Date, ma NON le Promise:
+ * tra un tick e l'altro serve far avanzare le `await` interne di refreshAll a mano.
+ */
+const flushMicrotasks = async (turns = 50): Promise<void> => {
+  for (let i = 0; i < turns; i++) await Promise.resolve();
+};
+
 class FakeInstruments {
   items: Instrument[] = [];
   list = async (): Promise<Instrument[]> => this.items.map((i) => ({ ...i }));
@@ -137,18 +145,35 @@ describe('QuoteService', () => {
       expect(repo.items.find((i) => i.symbol === 'EU')!.lastPrice).toBe(2);
     });
 
-    it('distanzia le chiamate consecutive allo stesso provider (minIntervalMs)', async () => {
-      alphavantage.minIntervalMs = 60; // piccolo intervallo reale per il test
-      repo.items = [
-        inst({ symbol: 'A1', provider: 'alphavantage', currency: 'EUR' }),
-        inst({ symbol: 'A2', provider: 'alphavantage', currency: 'EUR' }),
-      ];
-      quotes['A1'] = { symbol: 'A1', price: 1, currency: 'EUR', at: new Date() };
-      quotes['A2'] = { symbol: 'A2', price: 2, currency: 'EUR', at: new Date() };
-      await service.refreshAll();
-      expect(avCallTimes.length).toBe(2);
-      // la seconda chiamata parte almeno ~minIntervalMs dopo la prima (con slack per la CI)
-      expect(avCallTimes[1] - avCallTimes[0]).toBeGreaterThanOrEqual(45);
+    it('distanzia le chiamate consecutive allo stesso provider (minIntervalMs, timer finti)', async () => {
+      jasmine.clock().install();
+      jasmine.clock().mockDate(new Date(Date.UTC(2024, 0, 1)));
+      try {
+        const INTERVAL = 1000;
+        alphavantage.minIntervalMs = INTERVAL;
+        repo.items = [
+          inst({ symbol: 'A1', provider: 'alphavantage', currency: 'EUR' }),
+          inst({ symbol: 'A2', provider: 'alphavantage', currency: 'EUR' }),
+        ];
+        quotes['A1'] = { symbol: 'A1', price: 1, currency: 'EUR', at: new Date() };
+        quotes['A2'] = { symbol: 'A2', price: 2, currency: 'EUR', at: new Date() };
+
+        // setTimeout è finto: dopo la PRIMA chiamata, refreshAll resta in attesa del minIntervalMs.
+        const done = service.refreshAll();
+        await flushMicrotasks();
+        expect(avCallTimes.length).toBe(1); // la seconda non è ancora partita
+
+        jasmine.clock().tick(INTERVAL); // sblocca l'attesa
+        await flushMicrotasks();
+        const r = await done;
+
+        expect(avCallTimes.length).toBe(2);
+        // con i timer finti la distanza è ESATTA (niente slack come col timer reale)
+        expect(avCallTimes[1] - avCallTimes[0]).toBe(INTERVAL);
+        expect(r.updated).toBe(2);
+      } finally {
+        jasmine.clock().uninstall();
+      }
     });
   });
 });
