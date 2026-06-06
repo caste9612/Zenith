@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PortfolioHistoryRepository } from '../../core/data';
+import { PortfolioHistoryRepository, RealizedTradesRepository } from '../../core/data';
 import {
   formatEur,
   formatPercent,
@@ -8,6 +8,7 @@ import {
   formatSignedEur,
 } from '../../core/money/format';
 import { computeMetrics, RISK_FREE_ANNUAL } from '../../core/portfolio/metrics';
+import { groupRealizedByYear, realizedTotal } from '../../core/portfolio/realized';
 import { LineSeries, MultiLineChartComponent } from '../../shared/multi-line-chart';
 
 const periodFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeric' });
@@ -139,6 +140,57 @@ const COLORS = {
             Un segno − sul tuo confronto significa che l'indice ha reso di più.
           </p>
         </div>
+
+        @if (realizedYears().length) {
+          <h2 class="section-title">Operazioni chiuse</h2>
+          <div class="card trades">
+            <div class="row row-between trades-head">
+              <span class="label">Vendite e dividendi storici (itemizzato)</span>
+              <span
+                class="num value"
+                [class.gain]="itemizedTotal() > 0"
+                [class.loss]="itemizedTotal() < 0"
+                >{{ signed(itemizedTotal()) }}</span
+              >
+            </div>
+            @defer (on viewport) {
+              <div class="trades-list">
+                @for (y of realizedYears(); track y.year) {
+                  <div class="year-row">
+                    <span class="year">{{ y.year }}</span>
+                    <span
+                      class="num year-total"
+                      [class.gain]="y.total > 0"
+                      [class.loss]="y.total < 0"
+                      >{{ signed(y.total) }}</span
+                    >
+                  </div>
+                  @for (t of y.trades; track t.id) {
+                    <div class="trade">
+                      <span class="muted t-month">{{ monthShort(t.date) }}</span>
+                      <span class="t-sym">{{ t.symbol }}</span>
+                      @if (t.kind === 'dividend') {
+                        <span class="badge">div</span>
+                      }
+                      @if (t.plPct !== null) {
+                        <span class="muted t-pct">{{ pct(t.plPct) }}</span>
+                      }
+                      <span class="num t-pl" [class.gain]="t.pl > 0" [class.loss]="t.pl < 0">{{
+                        signed(t.pl)
+                      }}</span>
+                    </div>
+                  }
+                }
+              </div>
+            } @placeholder {
+              <div class="chart-ph"></div>
+            }
+            <p class="muted small note">
+              Dettaglio dall'Excel. Il "Realizzato" in alto include una quota iniziale non
+              itemizzata, quindi è maggiore della somma qui.
+            </p>
+          </div>
+        }
       } @else {
         <div class="card empty">
           <p class="secondary">
@@ -223,6 +275,65 @@ const COLORS = {
         padding: 1px 5px;
         border-radius: 5px;
       }
+      .trades-head {
+        margin-bottom: var(--space-2);
+      }
+      .trades-head .value {
+        font-weight: var(--fw-semibold);
+      }
+      .trades-list {
+        max-height: 360px;
+        overflow: auto;
+      }
+      .year-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin: var(--space-3) 0 var(--space-1);
+      }
+      .year-row .year {
+        font-size: var(--fs-label);
+        font-weight: var(--fw-semibold);
+        color: var(--text-secondary);
+      }
+      .year-row .year-total {
+        font-weight: var(--fw-semibold);
+      }
+      .trade {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-1) 0;
+        font-size: var(--fs-label);
+        border-top: 1px solid var(--border);
+      }
+      .t-month {
+        min-width: 64px;
+        text-transform: capitalize;
+        font-size: var(--fs-small);
+      }
+      .t-sym {
+        font-weight: var(--fw-medium);
+      }
+      .t-pct {
+        font-size: var(--fs-small);
+      }
+      .t-pl {
+        margin-left: auto;
+        font-weight: var(--fw-semibold);
+        min-width: 72px;
+        text-align: right;
+      }
+      .badge {
+        font-size: var(--fs-small);
+        padding: 0 6px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--text-secondary);
+      }
+      .chart-ph {
+        height: 200px;
+      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -231,6 +342,13 @@ export class PerformancePage {
   private readonly historyRepo = inject(PortfolioHistoryRepository);
   protected readonly points = this.historyRepo.connectByDate();
   protected readonly COLORS = COLORS;
+
+  private readonly tradesRepo = inject(RealizedTradesRepository);
+  protected readonly trades = this.tradesRepo.connectByDate();
+  /** Operazioni chiuse raggruppate per anno (più recente in alto). */
+  protected readonly realizedYears = computed(() => groupRealizedByYear(this.trades()));
+  /** P/L itemizzato (somma delle operazioni elencate): meno del "Realizzato" headline. */
+  protected readonly itemizedTotal = computed(() => realizedTotal(this.trades()));
 
   protected readonly last = computed(() => this.points().at(-1)!);
   protected readonly invested = computed(() => this.last()?.invested ?? 0);
@@ -304,5 +422,8 @@ export class PerformancePage {
   }
   protected ratio(v: number): string {
     return ratioFmt.format(v);
+  }
+  protected monthShort(d: Date): string {
+    return periodFmt.format(d);
   }
 }
