@@ -5,7 +5,8 @@
 > Ultimo aggiornamento dopo le sessioni: audit Excel, icona, dividendi, pagina Rendimento +
 > benchmark, gestione conti, release Windows, refactor patrimonio netto, suite di test + CI,
 > validazione oracolo Excel + indicatori sul patrimonio netto + provider Yahoo (app nativa),
-> **catena quotazioni multi-provider con fallback + ricerca titoli multi-provider**.
+> **catena quotazioni multi-provider con fallback + ricerca titoli multi-provider**, **storico del
+> patrimonio in dashboard (composizione/drill/risparmio)**.
 
 ## Dove si lavora (branch)
 
@@ -26,7 +27,7 @@
    release Windows). `.env.example` elenca i campi.
 3. `npm start` → genera la config + `ng serve` su http://localhost:4200 (login con le credenziali utente).
 4. `npm run build` → build in `dist/zenith/browser`.
-5. `npm run test:ci` → **84 test** headless (richiede **Chrome** installato).
+5. `npm run test:ci` → **92 test** headless (richiede **Chrome** installato).
 6. **Import dall'Excel** (Excel gitignorato, es. `data/Balance Sheet.xlsx`):
    `import:parse` · `import:seed` · `import:openings` · `import:dividends` · `import:trackrecord`.
    Dopo `import:parse`: `npm run validate:oracle` confronta i totali calcolati con l'Excel
@@ -37,8 +38,8 @@
 ## Stato produzione — RE-DEPLOY IN SOSPESO ⏳
 
 - Sito: **https://zenith-5768d.web.app** — **indietro rispetto a `main`**: mancano la sezione
-  **Indicatori** della dashboard (crescita annua / volatilità / max drawdown) e il nuovo **editor
-  strumento con ricerca multi-provider**.
+  **Indicatori** e le nuove **sezioni storiche** della dashboard (composizione nel tempo, andamento
+  per voce, tasso di risparmio) e il nuovo **editor strumento con ricerca multi-provider**.
   Per allinearlo: **`npm run deploy:hosting`** (build + Firebase Hosting). Il resto (navbar, pagina
   Rendimento + benchmark, dividendi, gestione conti, icona) è già online.
 - App Windows: **https://github.com/caste9612/Zenith/releases** (v0.1.0, `.msi`/`.exe`). Il nuovo
@@ -68,6 +69,26 @@
   ambigui, nessun nome/ISIN nello storico) → si trovano con la nuova ricerca on-device.
 - **Test**: da 69 a **84** (`symbolForProvider`, catena/fallback, valuta-dalla-quotazione, parser di
   ricerca Yahoo/Finnhub).
+
+## Fatto in questa sessione — Storico del patrimonio (Piano A)
+
+> Dall'analisi dell'Excel (6 fogli) sono emersi dati/grafici mancanti. Scelti i piani **A + C + D**;
+> **A completato** (92 test verdi, build ok). I grafici usano i dati **già su Firestore** (snapshot),
+> nessun import nuovo.
+
+- **Analisi Excel** (strumento `scripts/explore-excel.mjs`): i 6 fogli sono `Amorini` (bilancio, già
+  usato), `Azionario` (posizioni + track record + **composizione mensile** + **posizioni chiuse** +
+  portafogli what-if), `CryptoCapitalCF` (**fondo crypto** a quote/NAV con stakeholder + track
+  record), `CashFlow` (entrate/uscite/risparmio), `Assets` (storia per 4 classi, ridondante),
+  `Foglio1` (brutta copia).
+- **Piano A — Storico patrimonio** ✅: nuove sezioni in dashboard (sotto la piega, `@defer`):
+  composizione **per classe** e **per intestatario** nel tempo (`StackedAreaChartComponent`, area
+  impilata), **andamento di una voce** (selettore + `ValueChartComponent`), **tasso di risparmio**
+  (`BarChartComponent`). Funzioni pure `assetClassSeries`/`ownerSeries`/`accountSeries`/
+  `savingRateSeries` in `core/balance/net-worth.ts` (testate). Il tasso di risparmio compare solo se
+  gli snapshot hanno `savingRate` (lo scrive `import:seed`).
+- **Piano C — Storico operazioni**: prossimo (trade chiusi dall'`Azionario`; eventuale composizione mensile).
+- **Piano D — Cash flow / risparmio**: dopo C (richiede `SEED_*` in `.env` per l'import).
 
 ## Fatto nella sessione precedente (i 4 "prossimi passi" del handoff precedente)
 
@@ -139,10 +160,12 @@
 
 ## Prossimi passi (ordine consigliato)
 
-> I 4 passi del handoff precedente sono stati affrontati tutti (vedi "Fatto in questa sessione").
-> Da qui:
+> Traccia "analisi dati mancanti" → piani **A/C/D**: **A fatto** (vedi sopra). **Prossimo: Piano C**
+> (storico operazioni: trade chiusi dall'`Azionario` → collezione read-only `realizedTrades` + elenco
+> nella pagina Rendimento; richiede `SEED_*` in `.env`), poi **Piano D** (cash flow). In parallelo,
+> dalla traccia quotazioni:
 
-1. **Re-deploy web** (per mostrare gli **Indicatori** della dashboard): `npm run deploy:hosting`.
+1. **Re-deploy web** (Indicatori + **sezioni storiche** della dashboard): `npm run deploy:hosting`.
 2. **Assegna le fonti e verifica on-device** (chiude il punto 4): build Tauri (`npm run tauri:build`
    o tag `v*`). Nell'**editor strumento** usa la **ricerca** per assegnare Yahoo ai titoli scoperti
    (TIBN→`TIBN.SW`, CKH→`0001.HK`, FLOW→`FLOW.AS`, ACOMO→`ACOMO.AS`) e **identificare PHO/POL**. Poi
@@ -163,7 +186,7 @@
 - `src/app/core/money/format.ts` — formattazione EUR/% (**testata**).
 - `src/app/features/portfolio/performance.ts` — pagina **Rendimento** + `shared/multi-line-chart.ts`.
 - `src/app/features/accounts/*` — **gestione conti/voci**.
-- `src/app/shared/allocation-pie.ts` (**testato**) · `value-chart.ts` — grafici riusabili.
+- `src/app/shared/allocation-pie.ts` · `value-chart.ts` · `stacked-area-chart.ts` · `bar-chart.ts` — grafici riusabili (**testati**).
 - `src/app/core/data/*` — `BaseRepository`, repository (incl. `PortfolioHistoryRepository`), bridge realtime.
 - `scripts/import/*` — parser Excel + seed + dividendi + track record.
 - `scripts/validate/oracle.mjs` — validazione **oracolo** locale (`npm run validate:oracle`), legge `data/seed.json`.

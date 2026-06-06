@@ -68,11 +68,14 @@ vincolo di progetto «dati finanziari fuori da git».
 - [x] `computeNetWorth` = somma asset − passività (`isLiability`).
 - [x] aggregati `totalsByOwner` e `totalsByAssetClass` (con `assetsOnly` per la torta).
 - [x] `valueReturns`/`seriesMetrics` (`core/portfolio/metrics`) — indicatori del **patrimonio netto** dalla serie del netto: variazioni periodo su periodo, salto dei passi con base ≤ 0, CAGR/volatilità/maxDrawdown coerenti con le primitive, serie corta → zero.
+- [x] **serie storiche** `assetClassSeries`/`ownerSeries`/`accountSeries`/`savingRateSeries` — valori per classe/intestatario/voce/risparmio allineati ai mesi (0 dove la chiave manca; `null` nel risparmio).
 - [ ] precompilazione del nuovo snapshot dai valori del mese precedente (logica nel componente).
 
 ### Componenti (shared)
 - [x] `AllocationPieComponent` — percentuali, una fetta per voce > 0, esclusione ≤ 0, stato vuoto.
 - [x] `ValueChartComponent` — con ≥ 2 punti disegna area+linea e mostra l'ultimo valore; < 2 punti → messaggio "dati insufficienti".
+- [x] `StackedAreaChartComponent` — un'area per serie, legenda con i valori del mese e totale; < 2 mesi → messaggio.
+- [x] `BarChartComponent` — una barra per valore presente (salta i `null`), percentuale del mese attivo; stato vuoto.
 
 ### Indicatori (Sharpe & co.) — `core/portfolio/metrics.spec.ts`
 - [x] serie dei **rendimenti mensili** time-weighted dal track record (`monthlyReturns`: scorporo flussi, vendite, dividendi, salto base ≤ 0).
