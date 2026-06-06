@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
 import {
   formatEur,
@@ -6,17 +6,52 @@ import {
   formatPercentPlain,
   formatSignedEur,
 } from '../../core/money/format';
-import { ASSET_CLASS_LABELS, Owner, OWNER_LABELS, OWNERS } from '../../core/models';
-import { totalsByAssetClass, totalsByOwner } from '../../core/balance/net-worth';
+import { AssetClass, ASSET_CLASS_LABELS, Owner, OWNER_LABELS, OWNERS } from '../../core/models';
+import {
+  accountSeries,
+  assetClassSeries,
+  ownerSeries,
+  savingRateSeries,
+  totalsByAssetClass,
+  totalsByOwner,
+} from '../../core/balance/net-worth';
 import { seriesMetrics } from '../../core/portfolio/metrics';
 import { AllocationPieComponent, PieItem } from '../../shared/allocation-pie';
+import { BarChartComponent } from '../../shared/bar-chart';
+import { StackedAreaChartComponent, StackSeries } from '../../shared/stacked-area-chart';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
 const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' });
 
+/** Colore stabile per classe di asset (coerente con la palette della torta). */
+const CLASS_COLORS: Record<AssetClass, string> = {
+  equity: '#3b5bdb',
+  crypto: '#f59f00',
+  pension: '#7048e8',
+  cash: '#12b886',
+  reserve: '#1098ad',
+  emergency: '#e64980',
+  realEstate: '#2f9e44',
+  vehicle: '#e8590c',
+  liability: '#e03131',
+  other: '#868e96',
+};
+
+/** Colore per intestatario (allineato ai pallini della dashboard). */
+const OWNER_COLORS: Record<Owner, string> = {
+  antonio: '#3b5bdb',
+  michela: '#12b886',
+  shared: '#f08c00',
+};
+
 @Component({
   selector: 'app-dashboard',
-  imports: [ValueChartComponent, AllocationPieComponent],
+  imports: [
+    ValueChartComponent,
+    AllocationPieComponent,
+    StackedAreaChartComponent,
+    BarChartComponent,
+  ],
   template: `
     <section class="page">
       <header class="page-header">
@@ -107,6 +142,59 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
             </div>
           }
         </div>
+
+        @if (snapshots().length >= 2) {
+          <h2 class="section-title">Composizione nel tempo</h2>
+          <div class="card">
+            <span class="label">Per classe di asset</span>
+            @defer (on viewport) {
+              <app-stacked-area-chart
+                [labels]="classStacks().labels"
+                [series]="classStacks().series"
+              />
+            } @placeholder {
+              <div class="chart-ph"></div>
+            }
+          </div>
+          <div class="card">
+            <span class="label">Per intestatario</span>
+            @defer (on viewport) {
+              <app-stacked-area-chart
+                [labels]="ownerStacks().labels"
+                [series]="ownerStacks().series"
+              />
+            } @placeholder {
+              <div class="chart-ph"></div>
+            }
+          </div>
+
+          <h2 class="section-title">Andamento di una voce</h2>
+          <div class="card">
+            <select class="select" (change)="selectAccount($event)" aria-label="Scegli la voce">
+              @for (o of accountOptions(); track o.id) {
+                <option [value]="o.id" [selected]="o.id === effectiveAccountId()">
+                  {{ o.name }}
+                </option>
+              }
+            </select>
+            @defer (on viewport) {
+              <app-value-chart [points]="accountChart()" />
+            } @placeholder {
+              <div class="chart-ph"></div>
+            }
+          </div>
+
+          @if (hasSavingRate()) {
+            <h2 class="section-title">Tasso di risparmio</h2>
+            <div class="card">
+              @defer (on viewport) {
+                <app-bar-chart [labels]="savingRate().labels" [values]="savingRate().values" />
+              } @placeholder {
+                <div class="chart-ph"></div>
+              }
+            </div>
+          }
+        }
       } @else {
         <div class="card empty">
           <p class="secondary">
@@ -192,6 +280,18 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
       .empty {
         padding: var(--space-6);
       }
+      .select {
+        margin-bottom: var(--space-3);
+        padding: var(--space-2) var(--space-3);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm, 6px);
+        background: var(--surface-2);
+        color: var(--text);
+        font: inherit;
+      }
+      .chart-ph {
+        height: 200px;
+      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -260,6 +360,54 @@ export class DashboardPage {
       .map(([cls, value]) => ({ label: ASSET_CLASS_LABELS[cls], value }))
       .sort((x, y) => y.value - x.value);
   });
+
+  /** Composizione del patrimonio per classe di asset nel tempo (ordine: classe più grande in basso). */
+  protected readonly classStacks = computed<{ labels: Date[]; series: StackSeries[] }>(() => {
+    const { labels, byKey } = assetClassSeries(this.accounts(), this.snapshots());
+    const series = [...byKey.entries()]
+      .sort((a, b) => (b[1].at(-1) ?? 0) - (a[1].at(-1) ?? 0))
+      .map(([cls, values]) => ({
+        name: ASSET_CLASS_LABELS[cls],
+        color: CLASS_COLORS[cls] ?? CLASS_COLORS.other,
+        values,
+      }));
+    return { labels, series };
+  });
+
+  /** Patrimonio per intestatario nel tempo. */
+  protected readonly ownerStacks = computed<{ labels: Date[]; series: StackSeries[] }>(() => {
+    const { labels, byKey } = ownerSeries(this.accounts(), this.snapshots());
+    const series = OWNERS.filter((o) => byKey.has(o)).map((o) => ({
+      name: OWNER_LABELS[o],
+      color: OWNER_COLORS[o],
+      values: byKey.get(o)!,
+    }));
+    return { labels, series };
+  });
+
+  /** Voci selezionabili per il drill (tutte le voci attive). */
+  protected readonly accountOptions = computed(() =>
+    this.accounts().map((a) => ({ id: a.id ?? a.name, name: a.name })),
+  );
+  protected readonly selectedAccountId = signal<string>('');
+  /** Voce effettiva mostrata: quella scelta o, se nessuna, la prima dell'elenco. */
+  protected readonly effectiveAccountId = computed(
+    () => this.selectedAccountId() || this.accountOptions()[0]?.id || '',
+  );
+  protected readonly accountChart = computed<ChartPoint[]>(() => {
+    const id = this.effectiveAccountId();
+    return id ? accountSeries(id, this.snapshots()) : [];
+  });
+
+  /** Tasso di risparmio mensile (frazione 0..1) nel tempo. */
+  protected readonly savingRate = computed(() => savingRateSeries(this.snapshots()));
+  protected readonly hasSavingRate = computed(() =>
+    this.savingRate().values.some((v) => v !== null),
+  );
+
+  protected selectAccount(e: Event): void {
+    this.selectedAccountId.set((e.target as HTMLSelectElement).value);
+  }
 
   protected monthLabel(): string {
     const l = this.latest();
