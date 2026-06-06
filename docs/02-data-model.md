@@ -39,11 +39,12 @@ Posizioni in titoli (dettaglio della voce investimenti).
 
 ### `users/{uid}/instruments`
 Anagrafica + cache quotazioni.
-- `symbol` (string) — ticker (per provider auto)
+- `symbol` (string) — ticker "canonico" (del provider primario; usato come fallback per i provider senza voce in `providerSymbols`)
 - `isin` (string, opz.)
 - `name` (string)
 - `assetType` (enum) — `equity` | `etf` | `bond` | `fx` | `other`
-- `provider` (string) — quale `QuoteProvider`
+- `provider` (string) — `QuoteProvider` **primario** dello strumento
+- `providerSymbols` (map, opz.) — simbolo per provider quando il ticker cambia per fonte (es. `{ "yahoo": "FLOW.AS", "alphavantage": "FLOW.AMS" }`); abilita la **catena con fallback** nel `QuoteService`. Se un provider manca, si usa `symbol`.
 - `lastPrice` (number)
 - `lastPriceAt` (timestamp)
 
