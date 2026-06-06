@@ -7,6 +7,7 @@ import {
   Holding,
   Instrument,
   PortfolioHistoryPoint,
+  RealizedTrade,
   Snapshot,
   Transaction,
 } from '../models';
@@ -51,6 +52,15 @@ export class PortfolioHistoryRepository extends BaseRepository<PortfolioHistoryP
   /** Storico mensile in tempo reale, ordine cronologico (chiamare in un contesto di injection). */
   connectByDate(): Signal<PortfolioHistoryPoint[]> {
     return this.connect(orderBy('date', 'asc'));
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class RealizedTradesRepository extends BaseRepository<RealizedTrade> {
+  protected readonly collectionName = 'realizedTrades';
+  /** Operazioni chiuse in tempo reale, dalla più recente (chiamare in un contesto di injection). */
+  connectByDate(): Signal<RealizedTrade[]> {
+    return this.connect(orderBy('date', 'desc'));
   }
 }
 
