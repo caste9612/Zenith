@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Zenith",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "identifier": "com.zenith.app",
   "build": {
     "frontendDist": "../dist/zenith/browser",
@@ -27,7 +27,7 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
