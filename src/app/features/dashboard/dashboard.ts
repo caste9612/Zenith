@@ -11,13 +11,11 @@ import {
   accountSeries,
   assetClassSeries,
   ownerSeries,
-  savingRateSeries,
   totalsByAssetClass,
   totalsByOwner,
 } from '../../core/balance/net-worth';
 import { seriesMetrics } from '../../core/portfolio/metrics';
 import { AllocationPieComponent, PieItem } from '../../shared/allocation-pie';
-import { BarChartComponent } from '../../shared/bar-chart';
 import { StackedAreaChartComponent, StackSeries } from '../../shared/stacked-area-chart';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
@@ -46,12 +44,7 @@ const OWNER_COLORS: Record<Owner, string> = {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [
-    ValueChartComponent,
-    AllocationPieComponent,
-    StackedAreaChartComponent,
-    BarChartComponent,
-  ],
+  imports: [ValueChartComponent, AllocationPieComponent, StackedAreaChartComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -183,17 +176,6 @@ const OWNER_COLORS: Record<Owner, string> = {
               <div class="chart-ph"></div>
             }
           </div>
-
-          @if (hasSavingRate()) {
-            <h2 class="section-title">Tasso di risparmio</h2>
-            <div class="card">
-              @defer (on viewport) {
-                <app-bar-chart [labels]="savingRate().labels" [values]="savingRate().values" />
-              } @placeholder {
-                <div class="chart-ph"></div>
-              }
-            </div>
-          }
         }
       } @else {
         <div class="card empty">
@@ -226,10 +208,6 @@ const OWNER_COLORS: Record<Owner, string> = {
       }
       .deltas .num {
         font-weight: var(--fw-semibold);
-      }
-      .section-title {
-        margin: var(--space-6) 0 var(--space-3);
-        font-size: var(--fs-h2);
       }
       .owners,
       .metrics {
@@ -398,12 +376,6 @@ export class DashboardPage {
     const id = this.effectiveAccountId();
     return id ? accountSeries(id, this.snapshots()) : [];
   });
-
-  /** Tasso di risparmio mensile (frazione 0..1) nel tempo. */
-  protected readonly savingRate = computed(() => savingRateSeries(this.snapshots()));
-  protected readonly hasSavingRate = computed(() =>
-    this.savingRate().values.some((v) => v !== null),
-  );
 
   protected selectAccount(e: Event): void {
     this.selectedAccountId.set((e.target as HTMLSelectElement).value);

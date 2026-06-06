@@ -5,10 +5,14 @@
   max-width: var(--content-max);
   margin: 0 auto;
   padding: var(--space-6) var(--space-5);
+  // Ritmo verticale coerente tra card/sezioni (prima le card adiacenti si toccavano).
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .page-header {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
 }
 .page-header h1 {
   font-size: var(--fs-h1);
@@ -17,6 +21,14 @@
   color: var(--text-secondary);
   font-size: var(--fs-body);
   margin-top: var(--space-1);
+}
+
+// Titolo di sezione (globale): un filo di respiro extra prima di una nuova sezione,
+// il resto del ritmo lo dà il gap della pagina.
+.section-title {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-semibold);
+  margin-top: var(--space-3);
 }
 
 // Stack verticale con gap coerente
