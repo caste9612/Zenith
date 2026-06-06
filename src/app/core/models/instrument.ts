@@ -28,6 +28,13 @@ export interface Instrument {
   /** Valuta di quotazione dello strumento (es. EUR, USD). */
   currency: string;
   provider: QuoteProviderId;
+  /**
+   * Simboli specifici per provider, per i titoli con ticker diversi a seconda della fonte
+   * (es. Flow Traders: `FLOW.AS` su Yahoo, `FLOW.AMS` su Alpha Vantage). Chiave = provider,
+   * valore = simbolo per quel provider; se un provider manca, si usa `symbol`. Abilita la catena
+   * multi-provider con fallback nel QuoteService (vedi `symbolForProvider`).
+   */
+  providerSymbols?: Partial<Record<QuoteProviderId, string>>;
 
   // --- cache quotazione automatica ---
   lastPrice?: number;

@@ -1,4 +1,4 @@
-import { Instrument } from '../models';
+import { Instrument, QuoteProviderId } from '../models';
 import { Quote } from './quote';
 
 /**
@@ -18,4 +18,21 @@ export interface QuoteProvider {
    * nessuna attesa. Il refresh distanzia le chiamate allo stesso provider di conseguenza.
    */
   readonly minIntervalMs?: number;
+}
+
+/**
+ * Il simbolo da usare per interrogare un certo provider, o `undefined` se quel provider non è
+ * previsto per lo strumento. Risolve la mappa `providerSymbols`; in mancanza, usa `symbol` solo se
+ * il provider è quello "primario" dello strumento. Conseguenze:
+ *  - titoli "legacy" (solo `symbol` + `provider`) → quotabili solo dal loro unico provider;
+ *  - titoli con `providerSymbols` → quotabili da ogni provider elencato (abilita catena e fallback).
+ */
+export function symbolForProvider(
+  instrument: Instrument,
+  providerId: QuoteProviderId,
+): string | undefined {
+  const mapped = instrument.providerSymbols?.[providerId];
+  if (mapped && mapped.trim()) return mapped.trim();
+  if (instrument.provider === providerId) return instrument.symbol;
+  return undefined;
 }

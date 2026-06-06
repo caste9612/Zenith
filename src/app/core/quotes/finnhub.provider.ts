@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { Instrument } from '../models';
+import { Instrument, QuoteProviderId } from '../models';
 import { platformFetch } from '../platform/tauri';
 import { Quote } from './quote';
-import { QuoteProvider } from './quote-provider';
+import { QuoteProvider, symbolForProvider } from './quote-provider';
 
 /**
  * Provider Finnhub per azioni/ETF (free tier ~60 chiamate/min).
@@ -12,19 +12,21 @@ import { QuoteProvider } from './quote-provider';
  */
 @Injectable({ providedIn: 'root' })
 export class FinnhubProvider implements QuoteProvider {
-  readonly id = 'finnhub';
+  readonly id: QuoteProviderId = 'finnhub';
 
   supports(instrument: Instrument): boolean {
     return (
-      instrument.provider === 'finnhub' &&
+      symbolForProvider(instrument, this.id) !== undefined &&
       (instrument.assetType === 'equity' || instrument.assetType === 'etf')
     );
   }
 
   async getQuote(instrument: Instrument): Promise<Quote | null> {
     if (!environment.finnhubApiKey) return null;
+    const symbol = symbolForProvider(instrument, this.id);
+    if (!symbol) return null;
     const url =
-      `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(instrument.symbol)}` +
+      `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}` +
       `&token=${environment.finnhubApiKey}`;
     const res = await platformFetch(url);
     if (!res.ok) return null;

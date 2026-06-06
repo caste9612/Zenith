@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { Instrument } from '../models';
+import { Instrument, QuoteProviderId } from '../models';
 import { platformFetch } from '../platform/tauri';
 import { Quote } from './quote';
-import { QuoteProvider } from './quote-provider';
+import { QuoteProvider, symbolForProvider } from './quote-provider';
 
 /**
  * Provider Alpha Vantage per i mercati NON-USA (Euronext Amsterdam/Londra ecc.) che Finnhub
@@ -13,22 +13,24 @@ import { QuoteProvider } from './quote-provider';
  */
 @Injectable({ providedIn: 'root' })
 export class AlphaVantageProvider implements QuoteProvider {
-  readonly id = 'alphavantage';
+  readonly id: QuoteProviderId = 'alphavantage';
   /** Free tier: max 1 richiesta/secondo (oltre al limite di 25/giorno). Distanzio di 1,3 s. */
   readonly minIntervalMs = 1300;
 
   supports(instrument: Instrument): boolean {
     return (
-      instrument.provider === 'alphavantage' &&
+      symbolForProvider(instrument, this.id) !== undefined &&
       (instrument.assetType === 'equity' || instrument.assetType === 'etf')
     );
   }
 
   async getQuote(instrument: Instrument): Promise<Quote | null> {
     if (!environment.alphaVantageApiKey) return null;
+    const symbol = symbolForProvider(instrument, this.id);
+    if (!symbol) return null;
     const url =
       `https://www.alphavantage.co/query?function=GLOBAL_QUOTE` +
-      `&symbol=${encodeURIComponent(instrument.symbol)}&apikey=${environment.alphaVantageApiKey}`;
+      `&symbol=${encodeURIComponent(symbol)}&apikey=${environment.alphaVantageApiKey}`;
     const res = await platformFetch(url);
     if (!res.ok) return null;
     const data = (await res.json()) as { 'Global Quote'?: Record<string, string> };

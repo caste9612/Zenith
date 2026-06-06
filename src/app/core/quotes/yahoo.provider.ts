@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Instrument } from '../models';
+import { Instrument, QuoteProviderId } from '../models';
 import { isTauri, platformFetch } from '../platform/tauri';
 import { Quote } from './quote';
-import { QuoteProvider } from './quote-provider';
+import { QuoteProvider, symbolForProvider } from './quote-provider';
 
 /** Metadati di prezzo nella risposta chart di Yahoo (i soli campi che leggiamo). */
 export interface YahooMeta {
@@ -30,28 +30,30 @@ export interface YahooChartResponse {
  * vengono invece quotati. Il prezzo arriva nella valuta nativa del mercato: il QuoteService lo
  * converte in EUR al cambio corrente (come per Finnhub/Alpha Vantage).
  *
- * Simbolo = ticker Yahoo con suffisso mercato, es. "ENI.MI" (Milano), "TIBN.AS" (Amsterdam),
+ * Simbolo = ticker Yahoo con suffisso mercato, es. "ENI.MI" (Milano), "TIBN.SW" (SIX, Svizzera),
  * "0001.HK" (Hong Kong). La verifica del simbolo giusto per ogni titolo e del comportamento
  * live va fatta on-device (vedi docs/09: TIBN/CKH/PHO/POL).
  */
 @Injectable({ providedIn: 'root' })
 export class YahooProvider implements QuoteProvider {
-  readonly id = 'yahoo';
+  readonly id: QuoteProviderId = 'yahoo';
   /** Endpoint cortese ma non documentato: distanzio un minimo le chiamate consecutive. */
   readonly minIntervalMs = 250;
 
   supports(instrument: Instrument): boolean {
     return (
       isTauri() && // solo app nativa: nel browser Yahoo è bloccato dalla CORS
-      instrument.provider === 'yahoo' &&
+      symbolForProvider(instrument, this.id) !== undefined &&
       (instrument.assetType === 'equity' || instrument.assetType === 'etf')
     );
   }
 
   async getQuote(instrument: Instrument): Promise<Quote | null> {
     if (!isTauri()) return null; // doppia guardia: niente fetch CORS dal browser
+    const symbol = symbolForProvider(instrument, this.id);
+    if (!symbol) return null;
     const url =
-      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(instrument.symbol)}` +
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
       `?range=1d&interval=1d`;
     const res = await platformFetch(url);
     if (!res.ok) return null;
