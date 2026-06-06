@@ -8,7 +8,9 @@ import {
   mean,
   monthlyReturns,
   sampleStdDev,
+  seriesMetrics,
   sharpeRatio,
+  valueReturns,
 } from './metrics';
 
 /** Costruisce un punto del track record con i soli campi rilevanti per gli indicatori. */
@@ -147,5 +149,39 @@ describe('metrics · indicatori', () => {
     expect(m.sharpe).toBeCloseTo(sharpeRatio(r), 12);
     // indice [1, 1.1, 1.1·0.89=0.979] → caduta (1.1−0.979)/1.1 = 0.11
     expect(m.maxDrawdown).toBeCloseTo(0.11, 10);
+  });
+});
+
+describe('metrics · serie di valori (patrimonio netto)', () => {
+  it('valueReturns: variazioni periodo su periodo', () => {
+    const r = valueReturns([100, 110, 99]);
+    expect(r.length).toBe(2);
+    expect(r[0]).toBeCloseTo(0.1, 10); // +10 su 100
+    expect(r[1]).toBeCloseTo(-0.1, 10); // 99 da 110 → −10%
+  });
+
+  it('valueReturns: salta i passi con base ≤ 0', () => {
+    const r = valueReturns([0, 50, 55]);
+    expect(r.length).toBe(1); // il passo con base 0 è saltato
+    expect(r[0]).toBeCloseTo(0.1, 10);
+  });
+
+  it('seriesMetrics: CAGR/volatilità/maxDrawdown coerenti con le primitive', () => {
+    const values = [100, 110, 99];
+    const r = valueReturns(values);
+    const m = seriesMetrics(values);
+    expect(m.steps).toBe(2);
+    expect(m.cagr).toBeCloseTo(cagr(r), 12);
+    expect(m.volatility).toBeCloseTo(annualizedVolatility(r), 12);
+    // indice [1, 1.1, 0.99] → caduta (1.1−0.99)/1.1 = 0.1
+    expect(m.maxDrawdown).toBeCloseTo(0.1, 10);
+  });
+
+  it('seriesMetrics: serie troppo corta → nessuna variazione, indicatori a zero', () => {
+    const m = seriesMetrics([100]);
+    expect(m.steps).toBe(0);
+    expect(m.cagr).toBe(0);
+    expect(m.volatility).toBe(0);
+    expect(m.maxDrawdown).toBe(0);
   });
 });

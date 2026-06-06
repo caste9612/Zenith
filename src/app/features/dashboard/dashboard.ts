@@ -1,8 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
-import { formatEur, formatSignedEur } from '../../core/money/format';
+import {
+  formatEur,
+  formatPercent,
+  formatPercentPlain,
+  formatSignedEur,
+} from '../../core/money/format';
 import { ASSET_CLASS_LABELS, Owner, OWNER_LABELS, OWNERS } from '../../core/models';
 import { totalsByAssetClass, totalsByOwner } from '../../core/balance/net-worth';
+import { seriesMetrics } from '../../core/portfolio/metrics';
 import { AllocationPieComponent, PieItem } from '../../shared/allocation-pie';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
@@ -46,6 +52,32 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
           <span class="label">Andamento patrimonio</span>
           <app-value-chart [points]="series()" />
         </div>
+
+        @if (nwMetrics().steps >= 2) {
+          <h2 class="section-title">Indicatori</h2>
+          <div class="grid metrics">
+            <div class="card mini">
+              <span class="label">Crescita annua</span>
+              <span
+                class="num value"
+                [class.gain]="nwMetrics().cagr > 0"
+                [class.loss]="nwMetrics().cagr < 0"
+                >{{ pct(nwMetrics().cagr) }}</span
+              >
+              <span class="muted small">CAGR del patrimonio</span>
+            </div>
+            <div class="card mini">
+              <span class="label">Volatilità</span>
+              <span class="num value">{{ pctPlain(nwMetrics().volatility) }}</span>
+              <span class="muted small">variazione mensile, annualizzata</span>
+            </div>
+            <div class="card mini">
+              <span class="label">Max drawdown</span>
+              <span class="num value loss">−{{ pctPlain(nwMetrics().maxDrawdown) }}</span>
+              <span class="muted small">caduta dal picco</span>
+            </div>
+          </div>
+        }
 
         <h2 class="section-title">Ripartizione per classe</h2>
         <div class="card">
@@ -111,7 +143,8 @@ const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeri
         margin: var(--space-6) 0 var(--space-3);
         font-size: var(--fs-h2);
       }
-      .owners {
+      .owners,
+      .metrics {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
       .mini {
@@ -214,6 +247,11 @@ export class DashboardPage {
     this.snapshots().map((s) => ({ date: s.date, value: s.netWorth })),
   );
 
+  /** Indicatori di crescita del patrimonio (CAGR, volatilità, max drawdown) dalla serie del netto. */
+  protected readonly nwMetrics = computed(() =>
+    seriesMetrics(this.snapshots().map((s) => s.netWorth)),
+  );
+
   /** Ripartizione del patrimonio per classe di asset (solo voci attive, escluse le passività). */
   protected readonly byClass = computed<PieItem[]>(() => {
     const l = this.latest();
@@ -233,6 +271,12 @@ export class DashboardPage {
   }
   protected signed(v: number): string {
     return formatSignedEur(v);
+  }
+  protected pct(v: number): string {
+    return formatPercent(v);
+  }
+  protected pctPlain(v: number): string {
+    return formatPercentPlain(v);
   }
   protected ownerLabel(o: Owner): string {
     return OWNER_LABELS[o];
