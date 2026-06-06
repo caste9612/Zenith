@@ -1,10 +1,41 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { InstrumentsRepository } from '../../core/data';
 import { Instrument, QuoteProviderId } from '../../core/models';
+import { SymbolMatch, SymbolSearchService } from '../../core/quotes/symbol-search';
 
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'GBX', 'CHF', 'HKD', 'SEK', 'DKK', 'NOK'];
-type Source = 'finnhub' | 'alphavantage' | 'manual';
+type Source = 'finnhub' | 'alphavantage' | 'yahoo' | 'manual';
+type AutoId = 'yahoo' | 'finnhub' | 'alphavantage';
+
+interface AutoSource {
+  id: AutoId;
+  label: string;
+  placeholder: string;
+  hint: string;
+}
+
+/** Fonti automatiche, in ordine di preferenza (Yahoo prima: copertura globale). */
+const AUTO: AutoSource[] = [
+  {
+    id: 'yahoo',
+    label: 'Yahoo (globale)',
+    placeholder: 'Es. FLOW.AS',
+    hint: 'Quasi tutti i mercati. Aggiorna SOLO nell’app desktop/Android (la web app non può per via della CORS). Suffisso mercato: .AS Amsterdam, .MI Milano, .SW Svizzera, .HK Hong Kong, .L Londra.',
+  },
+  {
+    id: 'finnhub',
+    label: 'Finnhub (USA)',
+    placeholder: 'Es. LBTYA',
+    hint: 'Finnhub free: solo mercati USA. Funziona anche nella web app.',
+  },
+  {
+    id: 'alphavantage',
+    label: 'Alpha Vantage (Europa)',
+    placeholder: 'Es. FLOW.AMS',
+    hint: 'Mercati internazionali, dati EOD (fine giornata), max 25/giorno. Funziona anche nella web app. Suffisso: .AMS Amsterdam, .LON Londra, .PAR Parigi.',
+  },
+];
 
 @Component({
   selector: 'app-instrument-edit',
@@ -12,19 +43,54 @@ type Source = 'finnhub' | 'alphavantage' | 'manual';
   template: `
     <section class="page">
       <header class="page-header">
-        <h1>{{ symbol() || 'Strumento' }}</h1>
-        <p class="subtitle">Fonte del prezzo e valuta.</p>
+        <h1>{{ name() || 'Strumento' }}</h1>
+        <p class="subtitle">Cerca il titolo, scegli la fonte del prezzo e la valuta.</p>
       </header>
 
       @if (loading()) {
         <div class="card"><p class="muted">Caricamento…</p></div>
       } @else {
         <div class="card stack-sm form">
+          <!-- RICERCA -->
+          <label class="field">
+            <span class="label">Cerca titolo</span>
+            <input
+              [value]="searchQuery()"
+              (input)="onSearchInput($event)"
+              placeholder="Nome o ticker (es. Flow Traders, ACOMO, CK Hutchison)"
+            />
+            @if (!searchSvc.fullSearchAvailable) {
+              <span class="muted small">
+                Ricerca completa (Yahoo) solo nell’app desktop/Android; qui nel browser vedi i
+                risultati Finnhub (USA).
+              </span>
+            }
+          </label>
+          @if (searching()) {
+            <p class="muted small">Ricerca…</p>
+          }
+          @if (matches().length) {
+            <ul class="matches">
+              @for (m of matches(); track m.provider + ':' + m.symbol) {
+                <li>
+                  <button type="button" class="match" (click)="pick(m)">
+                    <span class="m-name">{{ m.name }}</span>
+                    <span class="m-meta muted small">{{ metaLine(m) }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else if (searched() && !searching()) {
+            <p class="muted small">Nessun risultato per “{{ searchQuery() }}”.</p>
+          }
+
+          <!-- NOME -->
           <label class="field">
             <span class="label">Nome</span>
             <input [value]="name()" (input)="name.set(val($event))" />
           </label>
 
+          <!-- VALUTA -->
           <label class="field">
             <span class="label">Valuta di quotazione</span>
             <select (change)="currency.set(val($event))">
@@ -32,25 +98,20 @@ type Source = 'finnhub' | 'alphavantage' | 'manual';
                 <option [value]="c" [selected]="c === currency()">{{ c }}</option>
               }
             </select>
+            <span class="muted small">
+              Informativa: la conversione in EUR usa comunque la valuta restituita dalla quotazione.
+            </span>
           </label>
 
+          <!-- FONTE PRIMARIA -->
           <div class="field">
             <span class="label">Fonte prezzo</span>
             <div class="segmented">
-              <button
-                type="button"
-                [class.active]="source() === 'finnhub'"
-                (click)="source.set('finnhub')"
-              >
-                Finnhub (USA)
-              </button>
-              <button
-                type="button"
-                [class.active]="source() === 'alphavantage'"
-                (click)="source.set('alphavantage')"
-              >
-                Alpha Vantage (Europa)
-              </button>
+              @for (a of autos; track a.id) {
+                <button type="button" [class.active]="source() === a.id" (click)="source.set(a.id)">
+                  {{ a.label }}
+                </button>
+              }
               <button
                 type="button"
                 [class.active]="source() === 'manual'"
@@ -75,23 +136,32 @@ type Source = 'finnhub' | 'alphavantage' | 'manual';
             </label>
           } @else {
             <label class="field">
-              <span class="label"
-                >Simbolo {{ source() === 'alphavantage' ? 'Alpha Vantage' : 'Finnhub' }}</span
-              >
+              <span class="label">Simbolo {{ currentAuto().label }}</span>
               <input
-                [value]="symbol()"
-                (input)="symbol.set(val($event))"
-                [placeholder]="source() === 'alphavantage' ? 'Es. FLOW.AMS' : 'Es. LBTYA'"
+                [value]="symOf(source())"
+                (input)="setSym(source(), val($event))"
+                [placeholder]="currentAuto().placeholder"
               />
-              @if (source() === 'alphavantage') {
-                <span class="muted small">
-                  Mercati internazionali (Euronext, Londra…), dati EOD. Suffisso mercato: .AMS
-                  Amsterdam, .LON Londra, .PAR Parigi.
-                </span>
-              } @else {
-                <span class="muted small">Finnhub free: solo mercati USA.</span>
-              }
+              <span class="muted small">{{ currentAuto().hint }}</span>
             </label>
+
+            <details class="field advanced">
+              <summary class="label">Altri simboli (fallback, opzionale)</summary>
+              <p class="muted small">
+                Se imposti più fonti, l’app prova prima la primaria e poi le altre: utile per coprire
+                più mercati o non esaurire la quota di una singola fonte.
+              </p>
+              @for (a of otherAutos(); track a.id) {
+                <label class="field">
+                  <span class="label small">{{ a.label }}</span>
+                  <input
+                    [value]="symOf(a.id)"
+                    (input)="setSym(a.id, val($event))"
+                    [placeholder]="a.placeholder"
+                  />
+                </label>
+              }
+            </details>
           }
         </div>
 
@@ -123,6 +193,39 @@ type Source = 'finnhub' | 'alphavantage' | 'manual';
       }
       .small {
         font-size: var(--fs-small);
+      }
+      .matches {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        max-height: 280px;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      .match {
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: transparent;
+        padding: var(--space-2) var(--space-3);
+        border-radius: calc(var(--radius) - 2px);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        cursor: pointer;
+      }
+      .match:hover {
+        background: var(--surface-2);
+      }
+      .m-name {
+        font-weight: var(--fw-medium);
+      }
+      .advanced summary {
+        cursor: pointer;
       }
       .segmented {
         display: flex;
@@ -157,20 +260,37 @@ type Source = 'finnhub' | 'alphavantage' | 'manual';
 })
 export class InstrumentEditPage {
   private readonly repo = inject(InstrumentsRepository);
+  protected readonly searchSvc = inject(SymbolSearchService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   private readonly id = this.route.snapshot.paramMap.get('id') ?? '';
   protected readonly currencies = CURRENCIES;
+  protected readonly autos = AUTO;
 
   protected readonly loading = signal(true);
-  protected readonly symbol = signal('');
   protected readonly name = signal('');
   protected readonly currency = signal('EUR');
   protected readonly source = signal<Source>('manual');
+  /** Simboli per provider in modifica (mappa providerSymbols). */
+  protected readonly symbols = signal<Partial<Record<QuoteProviderId, string>>>({});
   protected readonly manualPrice = signal<number | null>(null);
   protected readonly busy = signal(false);
+
+  // ricerca
+  protected readonly searchQuery = signal('');
+  protected readonly matches = signal<SymbolMatch[]>([]);
+  protected readonly searching = signal(false);
+  protected readonly searched = signal(false);
+  private searchSeq = 0;
+  private searchTimer: ReturnType<typeof setTimeout> | undefined;
+
   private original: Instrument | null = null;
+
+  protected readonly currentAuto = computed(
+    () => AUTO.find((a) => a.id === this.source()) ?? AUTO[0],
+  );
+  protected readonly otherAutos = computed(() => AUTO.filter((a) => a.id !== this.source()));
 
   constructor() {
     void this.init();
@@ -180,16 +300,18 @@ export class InstrumentEditPage {
     const ins = (await this.repo.list()).find((i) => (i.id ?? i.symbol) === this.id);
     if (ins) {
       this.original = ins;
-      this.symbol.set(ins.symbol);
       this.name.set(ins.name);
       this.currency.set(ins.currency || 'EUR');
-      this.source.set(
-        ins.provider === 'manual'
-          ? 'manual'
-          : ins.provider === 'alphavantage'
-            ? 'alphavantage'
-            : 'finnhub',
-      );
+      const src: Source = (['finnhub', 'alphavantage', 'yahoo', 'manual'] as const).includes(
+        ins.provider as Source,
+      )
+        ? (ins.provider as Source)
+        : 'manual';
+      this.source.set(src);
+      // Pre-carica i simboli per-provider; per i titoli "legacy" semina il simbolo sotto il provider.
+      const seed: Partial<Record<QuoteProviderId, string>> = { ...(ins.providerSymbols ?? {}) };
+      if (src !== 'manual' && !seed[src] && ins.symbol) seed[src] = ins.symbol;
+      this.symbols.set(seed);
       this.manualPrice.set(ins.manualPrice ?? ins.lastPrice ?? null);
     }
     this.loading.set(false);
@@ -203,20 +325,88 @@ export class InstrumentEditPage {
     return Number.isFinite(n) ? n : null;
   }
 
+  protected metaLine(m: SymbolMatch): string {
+    const parts = [m.symbol, m.exchange, this.providerLabel(m.provider)].filter(Boolean);
+    return parts.join(' · ');
+  }
+  protected providerLabel(p: QuoteProviderId): string {
+    return AUTO.find((a) => a.id === p)?.label.split(' ')[0] ?? p;
+  }
+
+  protected symOf(p: string): string {
+    return this.symbols()[p as QuoteProviderId] ?? '';
+  }
+  protected setSym(p: string, v: string): void {
+    this.symbols.update((s) => ({ ...s, [p]: v }));
+  }
+
+  protected onSearchInput(e: Event): void {
+    const q = this.val(e);
+    this.searchQuery.set(q);
+    clearTimeout(this.searchTimer);
+    if (q.trim().length < 2) {
+      this.matches.set([]);
+      this.searched.set(false);
+      return;
+    }
+    this.searchTimer = setTimeout(() => void this.runSearch(q), 300);
+  }
+
+  private async runSearch(q: string): Promise<void> {
+    const seq = ++this.searchSeq;
+    this.searching.set(true);
+    try {
+      const r = await this.searchSvc.search(q);
+      if (seq !== this.searchSeq) return; // risultato obsoleto: ignora
+      this.matches.set(r);
+      this.searched.set(true);
+    } finally {
+      if (seq === this.searchSeq) this.searching.set(false);
+    }
+  }
+
+  protected pick(m: SymbolMatch): void {
+    this.source.set(m.provider as Source);
+    this.setSym(m.provider, m.symbol);
+    if (!this.name().trim()) this.name.set(m.name);
+    if (m.currency) this.currency.set(m.currency);
+    this.matches.set([]);
+    this.searchQuery.set('');
+    this.searched.set(false);
+  }
+
   protected async save(): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     try {
-      const provider: QuoteProviderId = this.source();
+      const source = this.source();
+      const provider: QuoteProviderId = source;
+
+      // Mappa providerSymbols: solo le fonti automatiche con un simbolo valorizzato.
+      const providerSymbols: Partial<Record<QuoteProviderId, string>> = {};
+      for (const a of AUTO) {
+        const t = (this.symbols()[a.id] ?? '').trim().toUpperCase();
+        if (t) providerSymbols[a.id] = t;
+      }
+
+      // Simbolo "canonico" (anche id/visualizzazione): quello della fonte primaria, se auto.
+      const primarySym =
+        source === 'manual'
+          ? (this.original?.symbol ?? this.id)
+          : (providerSymbols[source] ?? this.original?.symbol ?? this.id);
+
       const inst: Instrument = {
         ...(this.original ?? { assetType: 'equity' }),
         id: this.id,
-        symbol: this.symbol().trim().toUpperCase() || this.id,
-        name: this.name().trim() || this.symbol(),
+        symbol: (primarySym || this.id).toUpperCase(),
+        name: this.name().trim() || primarySym,
         currency: this.currency().trim().toUpperCase() || 'EUR',
         provider,
         assetType: this.original?.assetType ?? 'equity',
       };
+      if (source !== 'manual' && Object.keys(providerSymbols).length) {
+        inst.providerSymbols = providerSymbols;
+      }
       if (provider === 'manual') {
         const p = this.manualPrice() ?? 0;
         inst.manualPrice = p;
