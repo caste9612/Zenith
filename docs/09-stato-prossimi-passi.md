@@ -35,16 +35,16 @@
 7. **Deploy web** (manuale): `npm run deploy:hosting`. **App Windows**: push di un tag `v*` →
    GitHub Action builda e pubblica l'installer nei Releases.
 
-## Stato produzione — RE-DEPLOY IN SOSPESO ⏳
+## Stato produzione — WEB ALLINEATA ✅ · Windows v0.2.0 in pubblicazione
 
-- Sito: **https://zenith-5768d.web.app** — **indietro rispetto a `main`**: mancano la sezione
-  **Indicatori** e le nuove **sezioni storiche** della dashboard (composizione nel tempo, andamento
-  per voce, tasso di risparmio) e il nuovo **editor strumento con ricerca multi-provider**.
-  Per allinearlo: **`npm run deploy:hosting`** (build + Firebase Hosting). Il resto (navbar, pagina
-  Rendimento + benchmark, dividendi, gestione conti, icona) è già online.
-- App Windows: **https://github.com/caste9612/Zenith/releases** (v0.1.0, `.msi`/`.exe`). Il nuovo
-  **provider Yahoo** è attivo solo nell'app nativa (CORS): per provarlo serve una build Tauri (e i
-  titoli vanno marcati `provider: 'yahoo'`). Per pubblicare: push di un tag `v*` → GitHub Action.
+- Sito: **https://zenith-5768d.web.app** — **allineato a `main`** (deploy fatto): dashboard storica +
+  Indicatori, pagina Rendimento + Operazioni chiuse, editor/ricerca multi-provider, ecc. Re-deploy
+  dopo nuove modifiche: **`npm run deploy:hosting`** (CLI loggata come `wcaste1996@gmail.com`).
+  *(Sul web le quote auto non si aggiornano se mancano le chiavi Finnhub/Alpha Vantage in `.env`; le
+  sezioni `Operazioni chiuse`/`tasso di risparmio` restano vuote finché non si importano i dati.)*
+- App Windows: tag **`v0.2.0`** pushato → la GitHub Action builda l'installer (Releases). Prima
+  release con l'**auto-updater** (dormiente finché non si arma la firma — vedi sezione "Auto-updater").
+  Aggiornamento 0.1.0 → 0.2.0 **manuale** una tantum. **Yahoo** funziona solo qui (nativo).
 
 ## Fatto in questa sessione — quotazioni multi-provider + ricerca
 
