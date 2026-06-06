@@ -1,7 +1,12 @@
 import { AssetClass, Owner } from '../models';
 import {
+  accountSeries,
+  assetClassSeries,
   BalanceAccount,
+  BalanceSnapshot,
   computeNetWorth,
+  ownerSeries,
+  savingRateSeries,
   totalsByAssetClass,
   totalsByOwner,
   ValueMap,
@@ -57,5 +62,43 @@ describe('balance/net-worth', () => {
     expect(t.get('equity')).toBe(1000);
     expect(t.has('liability')).toBe(false); // passività escluse
     expect(t.has('reserve')).toBe(false); // importo 0 escluso
+  });
+});
+
+describe('balance/net-worth · serie storiche', () => {
+  const accounts: BalanceAccount[] = [
+    acc('a', 'antonio', 'equity'),
+    acc('c', 'antonio', 'cash'),
+    acc('m', 'michela', 'pension'),
+  ];
+  const snaps: BalanceSnapshot[] = [
+    { date: new Date(2024, 0, 31), values: { a: 100, c: 50, m: 200 }, savingRate: 0.2 },
+    { date: new Date(2024, 1, 29), values: { a: 120, c: 60, m: 210 } },
+    { date: new Date(2024, 2, 31), values: { a: 0, c: 80, m: 220 }, savingRate: 0.3 },
+  ];
+
+  it('assetClassSeries: valori per classe allineati ai mesi (assetsOnly esclude ≤ 0)', () => {
+    const { labels, byKey } = assetClassSeries(accounts, snaps);
+    expect(labels.length).toBe(3);
+    expect(byKey.get('equity')).toEqual([100, 120, 0]); // 3° mese a=0 → escluso → 0
+    expect(byKey.get('cash')).toEqual([50, 60, 80]);
+    expect(byKey.get('pension')).toEqual([200, 210, 220]);
+  });
+
+  it('ownerSeries: aggrega per intestatario nel tempo', () => {
+    const { byKey } = ownerSeries(accounts, snaps);
+    expect(byKey.get('antonio')).toEqual([150, 180, 80]); // a + c
+    expect(byKey.get('michela')).toEqual([200, 210, 220]);
+  });
+
+  it('accountSeries: valore di una voce nel tempo (0 dove assente)', () => {
+    expect(accountSeries('a', snaps).map((p) => p.value)).toEqual([100, 120, 0]);
+    expect(accountSeries('ignota', snaps).map((p) => p.value)).toEqual([0, 0, 0]);
+  });
+
+  it('savingRateSeries: frazioni con null dove manca il dato', () => {
+    const { labels, values } = savingRateSeries(snaps);
+    expect(labels.length).toBe(3);
+    expect(values).toEqual([0.2, null, 0.3]);
   });
 });

@@ -52,3 +52,74 @@ export function totalsByAssetClass(
   }
   return out;
 }
+
+// --- Serie storiche (per i grafici "nel tempo") -------------------------------------------
+// Costruite dai mesi degli snapshot (già ordinati per data). Pure e testate: la UI le mappa
+// solo in input per i grafici. I valori sono allineati per indice all'array `labels`.
+
+/** Campi di uno Snapshot che servono alle serie storiche. */
+export interface BalanceSnapshot {
+  date: Date;
+  values: ValueMap;
+  savingRate?: number;
+}
+
+/** Etichette + valori per chiave allineati ai mesi (0 dove la chiave è assente in quel mese). */
+export interface KeyedSeries<K> {
+  labels: Date[];
+  byKey: Map<K, number[]>;
+}
+
+function keyedSeries<K>(
+  snapshots: readonly BalanceSnapshot[],
+  totalsOf: (s: BalanceSnapshot) => Map<K, number>,
+): KeyedSeries<K> {
+  const labels = snapshots.map((s) => s.date);
+  const perMonth = snapshots.map(totalsOf);
+  const keys = new Set<K>();
+  for (const m of perMonth) for (const k of m.keys()) keys.add(k);
+  const byKey = new Map<K, number[]>();
+  for (const k of keys)
+    byKey.set(
+      k,
+      perMonth.map((m) => m.get(k) ?? 0),
+    );
+  return { labels, byKey };
+}
+
+/** Ripartizione per classe di asset (solo asset positivi) mese per mese. */
+export function assetClassSeries(
+  accounts: readonly BalanceAccount[],
+  snapshots: readonly BalanceSnapshot[],
+): KeyedSeries<AssetClass> {
+  return keyedSeries(snapshots, (s) =>
+    totalsByAssetClass(accounts, s.values, { assetsOnly: true }),
+  );
+}
+
+/** Patrimonio per intestatario mese per mese (totali con segno: le passività sottraggono). */
+export function ownerSeries(
+  accounts: readonly BalanceAccount[],
+  snapshots: readonly BalanceSnapshot[],
+): KeyedSeries<Owner> {
+  return keyedSeries(snapshots, (s) => totalsByOwner(accounts, s.values));
+}
+
+/** Valore di una singola voce nel tempo (0 nei mesi senza quel valore). */
+export function accountSeries(
+  accountId: string,
+  snapshots: readonly BalanceSnapshot[],
+): { date: Date; value: number }[] {
+  return snapshots.map((s) => ({ date: s.date, value: s.values[accountId] ?? 0 }));
+}
+
+/** Tasso di risparmio (frazione 0..1) nel tempo; `null` nei mesi senza dato. */
+export function savingRateSeries(snapshots: readonly BalanceSnapshot[]): {
+  labels: Date[];
+  values: (number | null)[];
+} {
+  return {
+    labels: snapshots.map((s) => s.date),
+    values: snapshots.map((s) => s.savingRate ?? null),
+  };
+}
