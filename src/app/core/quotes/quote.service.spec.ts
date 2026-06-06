@@ -6,6 +6,7 @@ import { AlphaVantageProvider } from './alphavantage.provider';
 import { FinnhubProvider } from './finnhub.provider';
 import { FxProvider } from './fx.provider';
 import { Quote } from './quote';
+import { symbolForProvider } from './quote-provider';
 import { QuoteService } from './quote.service';
 
 /**
@@ -31,22 +32,29 @@ class FakeInstruments {
 describe('QuoteService', () => {
   let service: QuoteService;
   let repo: FakeInstruments;
-  let quotes: Record<string, Quote | null>;
+  let quotes: Record<string, Quote | null>; // risposta per simbolo (comune ai provider)
+  let quotesByProvider: Record<string, Record<string, Quote | null>>; // providerId → simbolo → quota
   let usdToEur: number;
   let avCallTimes: number[]; // istanti (ms) delle chiamate ad Alpha Vantage, per il rate limit
 
+  // Provider finti capability-based, come quelli veri: supportano lo strumento se hanno un simbolo
+  // per sé (symbolForProvider). getQuote risponde prima dalla mappa per-provider, poi da `quotes`.
   const finnhub = {
     id: 'finnhub',
-    supports: (i: Instrument) => i.provider === 'finnhub',
-    getQuote: async (i: Instrument) => quotes[i.symbol] ?? null,
+    supports: (i: Instrument) => symbolForProvider(i, 'finnhub') !== undefined,
+    getQuote: async (i: Instrument) => {
+      const sym = symbolForProvider(i, 'finnhub')!;
+      return quotesByProvider['finnhub']?.[sym] ?? quotes[i.symbol] ?? null;
+    },
   };
   const alphavantage = {
     id: 'alphavantage',
     minIntervalMs: 0,
-    supports: (i: Instrument) => i.provider === 'alphavantage',
+    supports: (i: Instrument) => symbolForProvider(i, 'alphavantage') !== undefined,
     getQuote: async (i: Instrument) => {
       avCallTimes.push(Date.now());
-      return quotes[i.symbol] ?? null;
+      const sym = symbolForProvider(i, 'alphavantage')!;
+      return quotesByProvider['alphavantage']?.[sym] ?? quotes[i.symbol] ?? null;
     },
   };
   const fx = { getRate: async (from: string, to: string) => (from === to ? 1 : usdToEur) };
@@ -62,6 +70,7 @@ describe('QuoteService', () => {
   beforeEach(() => {
     repo = new FakeInstruments();
     quotes = {};
+    quotesByProvider = {};
     usdToEur = 0.5;
     avCallTimes = [];
     alphavantage.minIntervalMs = 0;
@@ -143,6 +152,52 @@ describe('QuoteService', () => {
       expect(r.updated).toBe(2);
       expect(repo.items.find((i) => i.symbol === 'US')!.lastPrice).toBe(1);
       expect(repo.items.find((i) => i.symbol === 'EU')!.lastPrice).toBe(2);
+    });
+
+    it('fallback: se il provider primario fallisce, prova il successivo della catena', async () => {
+      repo.items = [
+        inst({
+          symbol: 'FOO',
+          provider: 'finnhub',
+          currency: 'EUR',
+          providerSymbols: { finnhub: 'FOO', alphavantage: 'FOO.AMS' },
+        }),
+      ];
+      quotesByProvider['finnhub'] = { FOO: null }; // il primario non risolve
+      quotesByProvider['alphavantage'] = {
+        'FOO.AMS': { symbol: 'FOO', price: 7, currency: 'EUR', at: new Date() },
+      };
+      const r = await service.refreshAll();
+      expect(r.updated).toBe(1);
+      expect(r.failed).toEqual([]);
+      expect(repo.items.find((i) => i.symbol === 'FOO')!.lastPrice).toBe(7);
+    });
+
+    it('failed solo se TUTTI i provider della catena falliscono (prezzo intatto)', async () => {
+      repo.items = [
+        inst({
+          symbol: 'BAR',
+          provider: 'finnhub',
+          currency: 'EUR',
+          lastPrice: 42,
+          providerSymbols: { finnhub: 'BAR', alphavantage: 'BAR.AMS' },
+        }),
+      ];
+      quotesByProvider['finnhub'] = { BAR: null };
+      quotesByProvider['alphavantage'] = { 'BAR.AMS': null };
+      const r = await service.refreshAll();
+      expect(r.updated).toBe(0);
+      expect(r.failed).toEqual(['BAR']);
+      expect(repo.items.find((i) => i.symbol === 'BAR')!.lastPrice).toBe(42);
+    });
+
+    it('converte usando la valuta della QUOTAZIONE, non quella salvata sullo strumento', async () => {
+      // strumento marcato EUR, ma il provider risponde in USD (come Yahoo coi mercati esteri)
+      repo.items = [inst({ symbol: 'DUAL', provider: 'finnhub', currency: 'EUR' })];
+      quotes['DUAL'] = { symbol: 'DUAL', price: 10, currency: 'USD', at: new Date() };
+      await service.refreshAll();
+      // con inst.currency (EUR) resterebbe 10; con q.currency (USD) → 10 × 0,5 = 5
+      expect(repo.items.find((i) => i.symbol === 'DUAL')!.lastPrice).toBeCloseTo(5, 10);
     });
 
     it('distanzia le chiamate consecutive allo stesso provider (minIntervalMs, timer finti)', async () => {

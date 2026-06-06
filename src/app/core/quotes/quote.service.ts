@@ -4,6 +4,7 @@ import { Instrument } from '../models';
 import { AlphaVantageProvider } from './alphavantage.provider';
 import { FinnhubProvider } from './finnhub.provider';
 import { FxProvider } from './fx.provider';
+import { Quote } from './quote';
 import { QuoteProvider } from './quote-provider';
 import { YahooProvider } from './yahoo.provider';
 
@@ -29,8 +30,24 @@ export class QuoteService {
     inject(YahooProvider), // solo app nativa Tauri (CORS): nel browser supports() è false
   ];
 
-  providerFor(instrument: Instrument): QuoteProvider | undefined {
-    return this.providers.find((p) => p.supports(instrument));
+  /**
+   * Ordine dei fallback (il provider primario dello strumento va comunque per primo): Yahoo nativo,
+   * poi Finnhub, infine Alpha Vantage che ha la quota più stretta (25/giorno) → usato per ultimo.
+   */
+  private static readonly FALLBACK_RANK: Record<string, number> = {
+    yahoo: 0,
+    finnhub: 1,
+    alphavantage: 2,
+  };
+
+  /**
+   * Provider che sanno quotare lo strumento, in ordine di tentativo: prima il provider "primario"
+   * (`instrument.provider`), poi gli altri in ordine quota-friendly. Abilita la catena con fallback.
+   */
+  providersFor(instrument: Instrument): QuoteProvider[] {
+    const rank = (p: QuoteProvider): number =>
+      p.id === instrument.provider ? -1 : (QuoteService.FALLBACK_RANK[p.id] ?? 9);
+    return this.providers.filter((p) => p.supports(instrument)).sort((a, b) => rank(a) - rank(b));
   }
 
   isStale(
@@ -49,29 +66,42 @@ export class QuoteService {
     let updated = 0;
     const failed: string[] = [];
 
+    const rateToEur = async (currency: string | undefined): Promise<number> => {
+      const cur = (currency || 'EUR').toUpperCase();
+      let rate = rates.get(cur);
+      if (rate === undefined) {
+        rate = (await this.fx.getRate(cur, 'EUR')) ?? 1;
+        rates.set(cur, rate);
+      }
+      return rate;
+    };
+
     for (const inst of instruments) {
-      const provider = this.providerFor(inst);
-      if (!provider) continue; // manuali / non supportati: lasciati intatti
-      try {
-        // Rispetta il limite di burst del provider (es. Alpha Vantage: 1 req/secondo):
-        // distanzia le chiamate consecutive allo stesso provider.
-        const minInterval = provider.minIntervalMs ?? 0;
-        if (minInterval > 0) {
-          const wait = minInterval - (Date.now() - (lastCallAt.get(provider.id) ?? 0));
-          if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      const providers = this.providersFor(inst);
+      if (providers.length === 0) continue; // manuali / non configurati: lasciati intatti
+
+      let quoted = false;
+      for (const provider of providers) {
+        let q: Quote | null = null;
+        try {
+          // Rispetta il limite di burst del provider (es. Alpha Vantage: 1 req/secondo):
+          // distanzia le chiamate consecutive allo stesso provider.
+          const minInterval = provider.minIntervalMs ?? 0;
+          if (minInterval > 0) {
+            const wait = minInterval - (Date.now() - (lastCallAt.get(provider.id) ?? 0));
+            if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+          }
+          lastCallAt.set(provider.id, Date.now());
+          q = await provider.getQuote(inst);
+        } catch {
+          q = null; // questo provider ha fallito: proseguo con il prossimo della catena
         }
-        lastCallAt.set(provider.id, Date.now());
-        const q = await provider.getQuote(inst);
-        if (!q || q.price <= 0) {
-          failed.push(inst.symbol);
-          continue;
-        }
-        const cur = (inst.currency || 'EUR').toUpperCase();
-        let rate = rates.get(cur);
-        if (rate === undefined) {
-          rate = (await this.fx.getRate(cur, 'EUR')) ?? 1;
-          rates.set(cur, rate);
-        }
+        if (!q || q.price <= 0) continue;
+
+        // Conversione in EUR con la valuta restituita DALLA QUOTAZIONE (q.currency): Yahoo risponde
+        // nella valuta nativa del mercato (es. HKD per 0001.HK, CHF per TIBN.SW), che può differire
+        // da inst.currency. Così il valore in EUR è corretto a prescindere dal provider usato.
+        const rate = await rateToEur(q.currency ?? inst.currency);
         await this.instrumentsRepo.upsert({
           ...inst,
           lastPrice: q.price * rate, // in EUR
@@ -79,9 +109,10 @@ export class QuoteService {
           lastPriceAt: q.at,
         });
         updated++;
-      } catch {
-        failed.push(inst.symbol);
+        quoted = true;
+        break; // quotato: stop alla catena
       }
+      if (!quoted) failed.push(inst.symbol); // nessun provider della catena ha risposto
     }
     return { updated, failed, at: new Date() };
   }
