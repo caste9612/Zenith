@@ -16,6 +16,7 @@
     "import:openings": "node scripts/import/holdings-to-transactions.mjs",
     "import:dividends": "node scripts/import/dividends.mjs",
     "import:trackrecord": "node scripts/import/track-record.mjs",
+    "validate:oracle": "node scripts/validate/oracle.mjs",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
