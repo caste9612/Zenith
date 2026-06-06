@@ -221,6 +221,23 @@
         e riavvia. Stai vedendo l'app in modalità anteprima.
       </div>
     }
+    @if (updateAvailable(); as v) {
+      <div
+        class="banner"
+        role="status"
+        style="
+          display: flex;
+          gap: var(--space-3);
+          align-items: center;
+          justify-content: space-between;
+        "
+      >
+        <span><strong>Aggiornamento disponibile</strong> — versione {{ v }}.</span>
+        <button class="btn" type="button" (click)="installUpdate()" [disabled]="updating()">
+          {{ updating() ? 'Aggiorno…' : 'Aggiorna e riavvia' }}
+        </button>
+      </div>
+    }
     <router-outlet />
   </main>
 

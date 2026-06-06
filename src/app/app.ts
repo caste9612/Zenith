@@ -4,6 +4,7 @@ import { environment } from '../environments/environment';
 import { AuthService } from './core/auth/auth.service';
 import { ThemePreference } from './core/models';
 import { ThemeService } from './core/theme/theme.service';
+import { UpdaterService } from './core/platform/updater';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,16 @@ import { ThemeService } from './core/theme/theme.service';
 export class App {
   private readonly themeSvc = inject(ThemeService);
   protected readonly auth = inject(AuthService);
+  private readonly updaterSvc = inject(UpdaterService);
+
+  /** Versione di un aggiornamento pronto (solo app nativa Tauri), altrimenti null. */
+  protected readonly updateAvailable = this.updaterSvc.available;
+  protected readonly updating = signal(false);
+
+  constructor() {
+    // Controllo aggiornamenti non bloccante all'avvio (no-op nel browser/PWA).
+    void this.updaterSvc.checkOnStartup();
+  }
 
   protected readonly isDark = computed(() => this.themeSvc.resolved() === 'dark');
   /** Preferenza tema corrente (light/dark/system) per il pannello impostazioni. */
@@ -53,5 +64,14 @@ export class App {
   protected async logout(): Promise<void> {
     this.settingsOpen.set(false);
     await this.auth.logout();
+  }
+
+  protected async installUpdate(): Promise<void> {
+    this.updating.set(true);
+    try {
+      await this.updaterSvc.installAndRelaunch(); // in caso di successo l'app si riavvia
+    } catch {
+      this.updating.set(false);
+    }
   }
 }
