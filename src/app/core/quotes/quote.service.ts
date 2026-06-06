@@ -5,6 +5,7 @@ import { AlphaVantageProvider } from './alphavantage.provider';
 import { FinnhubProvider } from './finnhub.provider';
 import { FxProvider } from './fx.provider';
 import { QuoteProvider } from './quote-provider';
+import { YahooProvider } from './yahoo.provider';
 
 export interface RefreshResult {
   updated: number;
@@ -25,6 +26,7 @@ export class QuoteService {
   private readonly providers: QuoteProvider[] = [
     inject(FinnhubProvider),
     inject(AlphaVantageProvider),
+    inject(YahooProvider), // solo app nativa Tauri (CORS): nel browser supports() è false
   ];
 
   providerFor(instrument: Instrument): QuoteProvider | undefined {

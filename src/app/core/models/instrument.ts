@@ -2,7 +2,7 @@
 export type AssetType = 'equity' | 'etf' | 'bond' | 'crypto' | 'fx' | 'other';
 
 /** Quale fonte aggiorna la quotazione dello strumento. */
-export type QuoteProviderId = 'finnhub' | 'alphavantage' | 'fx' | 'manual';
+export type QuoteProviderId = 'finnhub' | 'alphavantage' | 'yahoo' | 'fx' | 'manual';
 
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   equity: 'Azione',
