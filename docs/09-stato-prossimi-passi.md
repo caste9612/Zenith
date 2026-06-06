@@ -27,7 +27,7 @@
    release Windows). `.env.example` elenca i campi.
 3. `npm start` → genera la config + `ng serve` su http://localhost:4200 (login con le credenziali utente).
 4. `npm run build` → build in `dist/zenith/browser`.
-5. `npm run test:ci` → **92 test** headless (richiede **Chrome** installato).
+5. `npm run test:ci` → **95 test** headless (richiede **Chrome** installato).
 6. **Import dall'Excel** (Excel gitignorato, es. `data/Balance Sheet.xlsx`):
    `import:parse` · `import:seed` · `import:openings` · `import:dividends` · `import:trackrecord`.
    Dopo `import:parse`: `npm run validate:oracle` confronta i totali calcolati con l'Excel
@@ -70,11 +70,11 @@
 - **Test**: da 69 a **84** (`symbolForProvider`, catena/fallback, valuta-dalla-quotazione, parser di
   ricerca Yahoo/Finnhub).
 
-## Fatto in questa sessione — Storico del patrimonio (Piano A)
+## Fatto in questa sessione — Storico patrimonio + operazioni (Piani A e C)
 
 > Dall'analisi dell'Excel (6 fogli) sono emersi dati/grafici mancanti. Scelti i piani **A + C + D**;
-> **A completato** (92 test verdi, build ok). I grafici usano i dati **già su Firestore** (snapshot),
-> nessun import nuovo.
+> **A e C completati** (95 test verdi, build ok). Piano A: grafici dai dati **già su Firestore**
+> (snapshot). Piano C: nuova collezione `realizedTrades` (import dedicato, da popolare con `SEED_*`).
 
 - **Analisi Excel** (strumento `scripts/explore-excel.mjs`): i 6 fogli sono `Amorini` (bilancio, già
   usato), `Azionario` (posizioni + track record + **composizione mensile** + **posizioni chiuse** +
@@ -87,8 +87,12 @@
   (`BarChartComponent`). Funzioni pure `assetClassSeries`/`ownerSeries`/`accountSeries`/
   `savingRateSeries` in `core/balance/net-worth.ts` (testate). Il tasso di risparmio compare solo se
   gli snapshot hanno `savingRate` (lo scrive `import:seed`).
-- **Piano C — Storico operazioni**: prossimo (trade chiusi dall'`Azionario`; eventuale composizione mensile).
-- **Piano D — Cash flow / risparmio**: dopo C (richiede `SEED_*` in `.env` per l'import).
+- **Piano C — Storico operazioni** ✅: collezione read-only `realizedTrades` + parser `import:trades`
+  (blocchi CLOSED POSITION del foglio `Azionario`: 102 operazioni — 64 vendite + 38 dividendi taggati;
+  sanity-check somma-vs-TOTALE Excel OK in ogni mese). Sezione **Operazioni chiuse** (per anno) nella
+  pagina Rendimento; helper puro `groupRealizedByYear` (testato). ⚠️ **Da popolare**:
+  `npm run import:trades` con `SEED_*` in `.env` (oggi vuoti) — finché non lo lanci, la sezione non compare.
+- **Piano D — Cash flow / risparmio**: prossimo (richiede `SEED_*` in `.env` per l'import).
 
 ## Fatto nella sessione precedente (i 4 "prossimi passi" del handoff precedente)
 
@@ -160,10 +164,10 @@
 
 ## Prossimi passi (ordine consigliato)
 
-> Traccia "analisi dati mancanti" → piani **A/C/D**: **A fatto** (vedi sopra). **Prossimo: Piano C**
-> (storico operazioni: trade chiusi dall'`Azionario` → collezione read-only `realizedTrades` + elenco
-> nella pagina Rendimento; richiede `SEED_*` in `.env`), poi **Piano D** (cash flow). In parallelo,
-> dalla traccia quotazioni:
+> Traccia "analisi dati mancanti" → piani **A/C/D**: **A e C fatti** (vedi sopra; **C da popolare**
+> con `npm run import:trades` + `SEED_*` in `.env`). **Prossimo: Piano D** (cash flow:
+> entrate/uscite/risparmio dal foglio `CashFlow` → pagina dedicata; ⚠️ inverte "niente
+> depositi/prelievi" e "niente report"). In parallelo, dalla traccia quotazioni:
 
 1. **Re-deploy web** (Indicatori + **sezioni storiche** della dashboard): `npm run deploy:hosting`.
 2. **Assegna le fonti e verifica on-device** (chiude il punto 4): build Tauri (`npm run tauri:build`
@@ -188,7 +192,8 @@
 - `src/app/features/accounts/*` — **gestione conti/voci**.
 - `src/app/shared/allocation-pie.ts` · `value-chart.ts` · `stacked-area-chart.ts` · `bar-chart.ts` — grafici riusabili (**testati**).
 - `src/app/core/data/*` — `BaseRepository`, repository (incl. `PortfolioHistoryRepository`), bridge realtime.
-- `scripts/import/*` — parser Excel + seed + dividendi + track record.
+- `scripts/import/*` — parser Excel + seed + dividendi + track record + **operazioni chiuse** (`closed-trades.mjs` → `import:trades`).
+- `src/app/core/portfolio/realized.ts` — operazioni chiuse → raggruppo per anno (**testato**); collezione `realizedTrades` (read-only).
 - `scripts/validate/oracle.mjs` — validazione **oracolo** locale (`npm run validate:oracle`), legge `data/seed.json`.
 - `src/app/core/portfolio/metrics.ts` — indicatori titoli + `valueReturns`/`seriesMetrics` per il **patrimonio netto** (**testati**).
 - `.github/workflows/` — `test.yml` (CI test) · `release-windows.yml` (build+release Tauri).

@@ -77,6 +77,10 @@ vincolo di progetto «dati finanziari fuori da git».
 - [x] `StackedAreaChartComponent` — un'area per serie, legenda con i valori del mese e totale; < 2 mesi → messaggio.
 - [x] `BarChartComponent` — una barra per valore presente (salta i `null`), percentuale del mese attivo; stato vuoto.
 
+### `core/portfolio/realized.ts` — `realized.spec.ts`
+- [x] `groupRealizedByYear` — anni decrescenti, totale per anno, ordine d'ingresso conservato; serie vuota → `[]`.
+- [x] `realizedTotal` — somma del P/L su tutte le operazioni.
+
 ### Indicatori (Sharpe & co.) — `core/portfolio/metrics.spec.ts`
 - [x] serie dei **rendimenti mensili** time-weighted dal track record (`monthlyReturns`: scorporo flussi, vendite, dividendi, salto base ≤ 0).
 - [x] **Sharpe** (media/dev. std × annualizzazione, rf), **volatilità**, **max drawdown**, **CAGR**.

@@ -76,6 +76,16 @@ Track record mensile del portafoglio titoli (importato dall'Excel), con confront
 - `dividends` (number, EUR) — dividendi del mese
 - `sp` / `nasdaq` (number, EUR) — valore simulato investendo lo stesso flusso nell'indice
 
+### `users/{uid}/realizedTrades`
+Operazioni **chiuse** storiche (importate dall'Excel): vendite e dividendi con il P/L realizzato. Sola lettura; **dettaglio** dietro al realizzato aggregato di `portfolioHistory`. Un documento per operazione (id `YYYY-MM-n`).
+- `date` (timestamp) — fine mese dell'operazione
+- `symbol` (string) — ticker (per i dividendi, il titolo che li ha pagati)
+- `kind` (enum) — `sale` | `dividend`
+- `cost` / `quantity` (number, opz.) — null per i dividendi
+- `proceeds` (number) — ricavo lordo ("utile" nell'Excel)
+- `pl` (number, EUR) — P/L realizzato
+- `plPct` (number, opz.) — frazione (0,12 = +12%); null per i dividendi
+
 ### `users/{uid}/settings`
 - `baseCurrency` (string) — default `EUR`
 - `quoteStalenessMinutes` (number) — soglia per il refresh all'avvio
