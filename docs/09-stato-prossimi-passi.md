@@ -3,7 +3,8 @@
 > Documento di **handoff**: fotografia aggiornata del progetto + cosa fare dopo. È il **punto di
 > partenza** di ogni sessione (leggi questo per primo). **Aggiornare alla fine di ogni sessione.**
 > Ultimo aggiornamento dopo le sessioni: audit Excel, icona, dividendi, pagina Rendimento +
-> benchmark, gestione conti, release Windows, refactor patrimonio netto, suite di test + CI.
+> benchmark, gestione conti, release Windows, refactor patrimonio netto, suite di test + CI,
+> **validazione oracolo Excel + indicatori sul patrimonio netto + provider Yahoo (app nativa)**.
 
 ## Dove si lavora (branch)
 
@@ -24,19 +25,46 @@
    release Windows). `.env.example` elenca i campi.
 3. `npm start` → genera la config + `ng serve` su http://localhost:4200 (login con le credenziali utente).
 4. `npm run build` → build in `dist/zenith/browser`.
-5. `npm run test:ci` → **54 test** headless (richiede **Chrome** installato).
-6. **Import dall'Excel** (Excel gitignorato in root, `Balance Sheet.xlsx`):
+5. `npm run test:ci` → **69 test** headless (richiede **Chrome** installato).
+6. **Import dall'Excel** (Excel gitignorato, es. `data/Balance Sheet.xlsx`):
    `import:parse` · `import:seed` · `import:openings` · `import:dividends` · `import:trackrecord`.
+   Dopo `import:parse`: `npm run validate:oracle` confronta i totali calcolati con l'Excel
+   (legge `data/seed.json`, gitignorato; salta da solo se assente — vedi `08-testing.md`).
 7. **Deploy web** (manuale): `npm run deploy:hosting`. **App Windows**: push di un tag `v*` →
    GitHub Action builda e pubblica l'installer nei Releases.
 
-## Stato produzione — ALLINEATA ✅
+## Stato produzione — RE-DEPLOY IN SOSPESO ⏳
 
-- Sito: **https://zenith-5768d.web.app** — **allineato a `main`** (navbar nuova, pagina Rendimento +
-  benchmark + indicatori, dividendi, gestione conti, icona). App Windows:
-  **https://github.com/caste9612/Zenith/releases** (v0.1.0, `.msi`/`.exe`).
-- Per ri-deployare dopo nuove modifiche: `npm run deploy:hosting` (build + Firebase Hosting).
-  App Windows: push di un tag `v*` → GitHub Action builda e pubblica l'installer.
+- Sito: **https://zenith-5768d.web.app** — **indietro rispetto a `main`**: manca la nuova sezione
+  **Indicatori** della dashboard (crescita annua / volatilità / max drawdown del patrimonio).
+  Per allinearlo: **`npm run deploy:hosting`** (build + Firebase Hosting). Il resto (navbar, pagina
+  Rendimento + benchmark, dividendi, gestione conti, icona) è già online.
+- App Windows: **https://github.com/caste9612/Zenith/releases** (v0.1.0, `.msi`/`.exe`). Il nuovo
+  **provider Yahoo** è attivo solo nell'app nativa (CORS): per provarlo serve una build Tauri (e i
+  titoli vanno marcati `provider: 'yahoo'`). Per pubblicare: push di un tag `v*` → GitHub Action.
+
+## Fatto in questa sessione (i 4 "prossimi passi" del handoff precedente)
+
+- **Validazione oracolo Excel (punto 1)** ✅ — `npm run import:parse` su `data/Balance Sheet.xlsx`
+  (63 mesi, feb 2021 → apr 2026). Nuovo script committato `scripts/validate/oracle.mjs`
+  (`npm run validate:oracle`) che ricontrolla gli invarianti leggendo `data/seed.json` (gitignorato):
+  **A)** Σ voci con segno == netWorth del parser → OK su 63/63; **B)** netWorth == colonna "Total"
+  dell'Excel (±1 €) → OK su 63/63; **C)** cross-check portafoglio ↔ voce "Azionario" (informativo:
+  Δ ~12% atteso, prezzi del portafoglio fermi al 18/05/2025 vs bilancio apr 2026). Salta da solo se
+  il seed manca → committabile senza far fallire la CI pubblica.
+- **Test mancanti (punto 2)** ✅ — da 54 a **69 test verdi**: `formatEur` (interi/decimali/zero/
+  negativi/separatori), `minIntervalMs` riscritto con **fake timers** (`jasmine.clock` + drain dei
+  microtask, distanza ESATTA al posto del timer reale con slack), primo test di `ValueChartComponent`.
+- **Indicatori sul patrimonio netto (punto 3)** ✅ — funzioni pure `valueReturns`/`seriesMetrics` in
+  `core/portfolio/metrics.ts` (riusano CAGR/volatilità/maxDrawdown; **niente Sharpe**: la serie del
+  netto include i risparmi versati, non è un rendimento risk-adjusted). Nuova sezione **Indicatori**
+  nella dashboard (crescita annua / volatilità / max drawdown), visibile con ≥ 3 snapshot.
+- **Provider Yahoo (punto 4)** ✅ *(da verificare on-device)* — `core/quotes/yahoo.provider.ts`
+  (endpoint `v8/finance/chart`), registrato nel `QuoteService`. Gated su **Tauri**: nel browser
+  `supports()` è false (CORS) e i titoli `yahoo` restano intatti come i manuali; nell'app nativa
+  vengono quotati e convertiti in EUR. Parsing isolato in `parseYahooQuote` (puro, testato). **Resta
+  da fare**: build Tauri, marcare TIBN/CKH/PHO/POL con `provider: 'yahoo'` e i simboli Yahoo giusti,
+  e verificare le quote dal vivo.
 
 ## Fatto nelle sessioni recenti (oltre al handoff precedente)
 
@@ -83,17 +111,18 @@
 
 ## Prossimi passi (ordine consigliato)
 
-> Produzione già allineata (deploy fatto). Da qui in poi, dopo modifiche significative:
-> `npm run deploy:hosting`.
+> I 4 passi del handoff precedente sono stati affrontati tutti (vedi "Fatto in questa sessione").
+> Da qui:
 
-1. **Validazione locale sull'Excel** (oracolo): con l'Excel in `data/`, `npm run import:parse` →
-   confrontare i totali calcolati dall'app con quelli reali (fixture reali gitignorate; vedi
-   `08-testing.md`). Da fare dopo gli import (dividendi/track record).
-2. **(Opzionale) Altri test**: casi `formatEur` (interi/decimali), altri test di componente
-   (grafici), `minIntervalMs` con **mock dei timer** al posto del test a timer reali.
-3. **(Opzionale) Indicatori sul patrimonio netto**: estendere CAGR/volatilità/… anche alla serie
-   degli **snapshot** del netto (non solo ai titoli).
-4. **(Futuro) Quotazioni europee complete**: Yahoo nell'app nativa Tauri per TIBN/CKH ecc.
+1. **Re-deploy web** (per mostrare gli **Indicatori** della dashboard): `npm run deploy:hosting`.
+2. **Verifica Yahoo on-device** (chiude il punto 4): build Tauri (tag `v*` o `npm run tauri:build`),
+   marcare i titoli europei scoperti (TIBN/CKH/PHO/POL) con `provider: 'yahoo'` e il simbolo Yahoo
+   corretto (es. `.AS`/`.MI`/`.L`), poi controllare le quote dal vivo. Se reggono, via i prezzi
+   manuali per quei titoli.
+3. **(Opzionale) Altri test di componente**: grafico multi-linea, dashboard, snapshot editor; e la
+   precompilazione del nuovo snapshot dal mese precedente (logica nel componente).
+4. **(Opzionale) Indicatori del netto — rifiniture**: per ora sono cumulativi sull'intera serie;
+   eventuale finestra mobile o confronto con un benchmark.
 
 ## Mappa rapida dei file chiave
 
@@ -101,13 +130,15 @@
 - `src/app/core/balance/net-worth.ts` — patrimonio netto (puro, **testato**).
 - `src/app/core/portfolio/metrics.ts` — indicatori (puro, **testato**).
 - `src/app/core/portfolio/portfolio.service.ts` — transazioni → posizioni, **PMC/P&L** (**testato**).
-- `src/app/core/quotes/*` — provider quotazioni (Finnhub/Alpha Vantage/manuale) + **FX** (**testati**); `minIntervalMs` per il rate limit.
+- `src/app/core/quotes/*` — provider quotazioni (Finnhub/Alpha Vantage/**Yahoo** solo Tauri/manuale) + **FX** (**testati**); `minIntervalMs` per il rate limit. `yahoo.provider.ts` con `parseYahooQuote` puro.
 - `src/app/core/money/format.ts` — formattazione EUR/% (**testata**).
 - `src/app/features/portfolio/performance.ts` — pagina **Rendimento** + `shared/multi-line-chart.ts`.
 - `src/app/features/accounts/*` — **gestione conti/voci**.
 - `src/app/shared/allocation-pie.ts` (**testato**) · `value-chart.ts` — grafici riusabili.
 - `src/app/core/data/*` — `BaseRepository`, repository (incl. `PortfolioHistoryRepository`), bridge realtime.
 - `scripts/import/*` — parser Excel + seed + dividendi + track record.
+- `scripts/validate/oracle.mjs` — validazione **oracolo** locale (`npm run validate:oracle`), legge `data/seed.json`.
+- `src/app/core/portfolio/metrics.ts` — indicatori titoli + `valueReturns`/`seriesMetrics` per il **patrimonio netto** (**testati**).
 - `.github/workflows/` — `test.yml` (CI test) · `release-windows.yml` (build+release Tauri).
 
 ## Documenti da leggere (contesto)

@@ -28,7 +28,7 @@ vincolo di progetto «dati finanziari fuori da git».
 ## Cosa testare, per modulo (checklist)
 
 ### `core/money/format.ts`
-- [ ] `formatEur` — interi, con decimali, zero, negativi, separatori `it-IT`.
+- [x] `formatEur` — interi, con decimali (`cents`), zero, negativi, separatori `it-IT`.
 - [x] `formatSignedEur` — segno `+/−`, zero.
 - [x] `formatPercent` — frazione → %, segno, arrotondamento.
 - [x] `gainClass` — `gain` / `loss` / `flat` (confine a zero).
@@ -45,32 +45,47 @@ vincolo di progetto «dati finanziari fuori da git».
 
 ### `core/quotes/quote.service.ts` — `quote.service.spec.ts`
 - [x] `isStale` — sotto/sopra soglia, confine esatto, `lastPriceAt` mancante.
-- [x] `refreshAll` — conversione in **EUR** via FX, lista `failed`, **non** sovrascrive i simboli non risolti. *(Resta: `minIntervalMs` con mock dei timer.)*
+- [x] `refreshAll` — conversione in **EUR** via FX, lista `failed`, **non** sovrascrive i simboli non risolti.
+- [x] `minIntervalMs` — rate limit con **timer finti** (`jasmine.clock` + drain microtask): distanza esatta tra chiamate.
 - [x] selezione provider (`supports`).
 
 ### `core/quotes/fx.provider.ts` — `fx.provider.spec.ts`
 - [x] `getRate` — stessa valuta → `1`, parsing risposta **Frankfurter**, **fallback** `open.er-api`, errore → `null` (spy su `window.fetch`, usato da `platformFetch` fuori da Tauri).
 
+### `core/quotes/yahoo.provider.ts` — `yahoo.provider.spec.ts`
+- [x] `parseYahooQuote` (puro) — prezzo/`prevClose`/valuta dalla risposta `chart`; `previousClose` di fallback; `prevClose` assente → `undefined`; risposta senza risultati o prezzo ≤ 0 → `null`.
+- [x] `supports` — gating su **Tauri**: nel browser sempre `false` (CORS); dentro Tauri vero per equity/ETF marcati `yahoo`, falso per provider/tipo diversi.
+
 ### Snapshot / patrimonio netto — `core/balance/net-worth.spec.ts`
 - [x] `computeNetWorth` = somma asset − passività (`isLiability`).
 - [x] aggregati `totalsByOwner` e `totalsByAssetClass` (con `assetsOnly` per la torta).
+- [x] `valueReturns`/`seriesMetrics` (`core/portfolio/metrics`) — indicatori del **patrimonio netto** dalla serie del netto: variazioni periodo su periodo, salto dei passi con base ≤ 0, CAGR/volatilità/maxDrawdown coerenti con le primitive, serie corta → zero.
 - [ ] precompilazione del nuovo snapshot dai valori del mese precedente (logica nel componente).
 
-### Indicatori (Sharpe & co.) — *quando implementati*
-- [ ] serie dei **rendimenti mensili** dal track record.
-- [ ] **Sharpe** (media/deviazione standard × annualizzazione), **volatilità**, **max drawdown**, **CAGR**.
-- [ ] casi: serie di 1 punto, serie piatta (dev. std 0 → niente divisione per zero), valori noti calcolati a mano.
+### Componenti (shared)
+- [x] `AllocationPieComponent` — percentuali, una fetta per voce > 0, esclusione ≤ 0, stato vuoto.
+- [x] `ValueChartComponent` — con ≥ 2 punti disegna area+linea e mostra l'ultimo valore; < 2 punti → messaggio "dati insufficienti".
+
+### Indicatori (Sharpe & co.) — `core/portfolio/metrics.spec.ts`
+- [x] serie dei **rendimenti mensili** time-weighted dal track record (`monthlyReturns`: scorporo flussi, vendite, dividendi, salto base ≤ 0).
+- [x] **Sharpe** (media/dev. std × annualizzazione, rf), **volatilità**, **max drawdown**, **CAGR**.
+- [x] casi: serie di 1 punto, serie piatta (dev. std 0 → niente divisione per zero), valori noti calcolati a mano.
+- [x] serie di **valori** (patrimonio netto): `valueReturns`/`seriesMetrics` — vedi sezione Snapshot.
 
 ### Benchmark (S&P / NASDAQ)
 - [ ] flusso netto investito (acquisti − vendite) applicato all'indice → unità simulate, valore, confronto col portafoglio.
 
-## Suite di validazione locale (oracolo = Excel)
-Script/test che legge `data/seed.json` (gitignored) e verifica che l'app riproduca i numeri veri:
-- ricostruisce le posizioni dai movimenti e le confronta con gli holding attesi;
-- somma gli snapshot mensili e confronta con i **totali storici** dell'Excel (con tolleranza di arrotondamento);
-- valore di portafoglio e P&L vs valori dell'Excel.
+## Suite di validazione locale (oracolo = Excel) — ✅ implementata
+`scripts/validate/oracle.mjs` (`npm run validate:oracle`) legge `data/seed.json` (gitignorato) e verifica:
+- **A)** coerenza interna: Σ delle voci (con segno per le passività) == `netWorth` scritto dal parser;
+- **B)** oracolo Excel: `netWorth` == colonna "Total" dell'Excel (`netWorthExcel`), tolleranza 1 €;
+- **C)** cross-check informativo: valore voce "Azionario" ≈ Σ(quantità × ultimo prezzo) del portafoglio.
 
-Eseguita **in locale** prima del push; la procedura va documentata nel README quando la suite esiste.
+È **committato** ma **salta da solo** (exit 0) se `data/seed.json` manca → non rompe la CI pubblica,
+dove i dati reali non esistono. Eseguilo **in locale** prima del push quando cambiano import o calcoli.
+
+Esito ultima esecuzione (63 mesi, feb 2021 → apr 2026): **A) 63/63 OK · B) 63/63 OK**; C) Δ ~12%
+atteso (prezzi del portafoglio fermi al 18/05/2025 vs bilancio apr 2026).
 
 ## Procedura per generare le fixture reali (quando l'Excel è disponibile)
 1. metti l'Excel in `data/` (resta fuori da git);

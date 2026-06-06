@@ -23,7 +23,7 @@
   - **Finnhub** (free): azioni/ETF **USA**, quasi-realtime (prezzo + chiusura precedente → variazione 1 giorno). Funziona dal browser (CORS ok).
   - **Alpha Vantage** (free, ~25 req/giorno): mercati **non-USA** (Euronext, Londra…), dati **EOD**. Funziona dal browser (CORS ok). Richiede chiave gratuita.
   - **Manuale**: prezzo inserito a mano (BTP/bond, titoli delistati, o mercati non coperti gratis), con data di aggiornamento.
-  - **Yahoo Finance** *(pianificato)*: copre tutto gratis ma è **bloccato dalla CORS nel browser** → utilizzabile solo nell'**app nativa Tauri** (plugin HTTP, senza CORS), in futuro.
+  - **Yahoo Finance** *(implementato, da verificare on-device)*: copre quasi tutto gratis ma è **bloccato dalla CORS nel browser** → `YahooProvider` (`v8/finance/chart`) attivo **solo nell'app nativa Tauri** (plugin HTTP, senza CORS); nel browser `supports()` è false e i titoli `yahoo` restano intatti. Parsing isolato in `parseYahooQuote` (puro, testato). Resta da provarlo dal vivo e da assegnare i simboli Yahoo ai titoli europei scoperti.
 - **Attenzione CORS:** nella web app funzionano solo le fonti che inviano header CORS (Finnhub, Alpha Vantage, Frankfurter). Le altre (Yahoo) restano per l'app nativa. Niente proxy (= niente Cloud Functions = si resta gratis).
 
 ## Multivaluta (implementata)
