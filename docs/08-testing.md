@@ -129,8 +129,10 @@ correttamente.
 Il committente tiene aggiornati **Excel e Zenith in parallelo**; dopo ogni aggiornamento si
 **riconciliano** i due per controllare che i numeri **tornino**:
 1. metti l'Excel aggiornato in `data/` (gitignorato) → `npm run import:parse`;
-2. `npm run validate:oracle` (coerenza interna + colonna Total) **e** `npm run verify` (ri-parse +
-   indicatori);
+2. `npm run validate:oracle` (coerenza interna + colonna Total), `npm run verify` (ri-parse +
+   indicatori) **e** `npm run cross-check` (Excel ↔ app **per foglio** → un CSV in `data/audit/` per
+   patrimonio/cash flow/track record/portafoglio + elenco **anomalie**; con `SEED_*` confronta i dati
+   reali dell'app da Firestore);
 3. confronta i totali **app vs Excel** e annota le discrepanze (partendo dai 2 refusi noti di 2024-09);
 4. se serve riallineare i dati su Firestore, usa gli script di import (idempotenti). ⚠️ Sovrascrivono
    `snapshots`/`cashFlow` eventualmente **inseriti/corretti a mano** in-app: rieseguili con cautela.

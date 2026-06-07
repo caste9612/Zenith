@@ -20,6 +20,7 @@
     "import:cashflow": "node scripts/import/cashflow.mjs",
     "validate:oracle": "node scripts/validate/oracle.mjs",
     "verify": "node scripts/validate/verify.mjs",
+    "cross-check": "node scripts/validate/cross-check.mjs",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",

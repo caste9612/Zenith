@@ -267,7 +267,7 @@ Aperti / opzionali:
 - `src/app/features/cashflow/cashflow.ts|cashflow-editor.ts` — pagina **Cash flow** + **editor "Nuovo mese"**; logica in `core/cashflow/cashflow.ts` (`savingRate`/`annualSummary`/`netRate`, **testata**); collezione `cashFlow`.
 - `src/app/features/settings/access-log.ts` — **registro accessi** (`describeDevice`, **testato**); collezione `accessLog`, scritta al login (`AccessLogRepository`).
 - `src/app/core/export/*` — **export Excel**: `sheets.ts` (dati→fogli, puro **testato**), `charts.ts` (grafici→PNG su canvas), `export.service.ts` (**ExcelJS** lazy + download web / salvataggio desktop via plugin Tauri **dialog+fs**). Bottone in Impostazioni; dipende da `exceljs` (in `allowedCommonJsDependencies`).
-- `scripts/validate/oracle.mjs` · `verify.mjs` — **oracolo** (`validate:oracle`, legge `data/seed.json`) e **verifica indipendente** end-to-end (`verify`, ri-parsa l'Excel). Entrambi locali.
+- `scripts/validate/oracle.mjs` · `verify.mjs` · `cross-check.mjs` — **oracolo** (`validate:oracle`, legge `data/seed.json`), **verifica indipendente** end-to-end (`verify`, ri-parsa l'Excel) e **controlli incrociati Excel ↔ app** (`cross-check` → CSV per foglio in `data/audit/` + anomalie; usa Firestore con `SEED_*`). Tutti locali.
 - `src/app/core/portfolio/metrics.ts` — indicatori titoli + `valueReturns`/`seriesMetrics` per il **patrimonio netto** (**testati**).
 - `.github/workflows/` — `test.yml` (CI test) · `release-windows.yml` (build+release Tauri).
 
