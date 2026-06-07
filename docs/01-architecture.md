@@ -16,6 +16,7 @@
 ## Vincolo "gratuito"
 - Piano **Spark**: nessun metodo di pagamento richiesto. I limiti giornalieri di Firestore (decine di migliaia di letture/scritture al giorno) sono enormemente sopra il fabbisogno di un'app personale a utente singolo.
 - **Niente Cloud Functions** (richiederebbero il piano Blaze). Ogni elaborazione è lato client.
+- **Conseguenza su sicurezza/monitoraggio:** anche il **registro accessi** è lato client (rilevamento in-app, vedi `05`); alert email su attività sospette — che richiederebbero un server sempre attivo — sono **esclusi**. Hardening server-side (App Check enforcement, MFA via Identity Platform) è valutato e rinviato.
 
 ## Strategia quotazioni (implementata)
 - **Nessuno streaming.** Refresh solo all'avvio (se la quota è "stale") e su pulsante "Aggiorna". Cache in Firestore (`lastPrice`, `prevClose`, `lastPriceAt`); soglia di *staleness* configurabile. Questo minimizza le chiamate e sincronizza i dispositivi.

@@ -7,9 +7,21 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
 - **Fase 1 — MVP:** ✅ **completata** — snapshot mensili (crea/modifica/elimina, precompilati), import dello storico dall'Excel, dashboard (netto + variazione + grafico + ripartizione), portafoglio con quotazioni.
 - **Fase 2 — Transazioni e P&L:** ✅ **completata** — acquisto/vendita (prezzo = importo/quantità), dividendi + contatore, P&L da **costo medio**, movimenti con eliminazione. *(Depositi/prelievi sui conti esclusi per scelta del committente: a fine mese si inserisce il saldo dei conti nello snapshot, e tanto basta.)*
 - **Fase 3 — Avanzate:** ✅ **completata** — multivaluta + cambio in EUR, quote **multi-provider con catena di fallback** (Finnhub/Alpha Vantage/**Yahoo** solo Tauri/manuale) + **ricerca titoli** per fonte/simbolo, prezzo manuale per BTP/non coperti, allocazione a torta (per titolo e per classe), grafico interattivo, gestione conti/voci, **import dividendi/track-record/plusvalenze realizzate dall'Excel**, pagina **Rendimento** con **benchmark S&P/NASDAQ** (serie `portfolioHistory`) e **indicatori** (CAGR, volatilità, Sharpe, max drawdown), app Windows pubblicata via **GitHub Releases** (CI Tauri).
-- **Qualità — Test:** 🔶 **in corso** — runner headless + CI attivi (`npm run test:ci`, workflow `test.yml`); **92 test verdi** su metrics (+ indicatori del **patrimonio netto**), format (incl. `formatEur`), **portfolio.service** (PMC/P&L), **quote.service** (staleness/FX/failed/**rate-limit con timer finti**), **fx.provider**, **yahoo.provider** (parsing + gating Tauri), **catena multi-provider/fallback** + `symbolForProvider`, **ricerca titoli** (`symbol-search`), **patrimonio netto** (`core/balance/net-worth`, incl. **serie storiche**) e **test di componente** (AllocationPie, ValueChart, **StackedArea**, **BarChart**). In più la **validazione oracolo** locale (`npm run validate:oracle`) contro l'Excel. *Mancano:* altri test dei componenti (grafico multi-linea, dashboard, snapshot editor). Piano in `docs/08-testing.md`.
+- **Fase 3+ — Cash flow, sicurezza, UX:** ✅ — pagina **Cash flow** (entrate/uscite/risparmio) con
+  **editor "Nuovo mese"** (lordo/netto/uscite → **tassazione** e **risparmio** calcolati) e
+  **tassazione per anno** (netto % del lordo); **tasso di risparmio** in dashboard **basato sul
+  patrimonio** (crescita del netto mese su mese, in **%/€**, per intestatario, con **filtro anno**);
+  **ripartizione** (torta Classe/Voce/Intestatario) e **composizione nel tempo** unificate con toggle;
+  **registro accessi** in Impostazioni; storico del patrimonio (composizione/drill); **fix layout
+  mobile** (bottom-nav). App desktop **v0.5.0** (auto-updater attivo).
+- **Qualità — Test:** ✅ **in corso** — runner headless + CI attivi (`npm run test:ci`, workflow `test.yml`); **108 test verdi** su metrics (+ indicatori del **patrimonio netto**), format (incl. `formatEur`), **portfolio.service** (PMC/P&L), **quote.service** (staleness/FX/failed/**rate-limit con timer finti**), **fx.provider**, **yahoo.provider** (parsing + gating Tauri), **catena multi-provider/fallback** + `symbolForProvider`, **ricerca titoli** (`symbol-search`), **patrimonio netto** (`core/balance/net-worth`, incl. **serie storiche**) e **test di componente** (AllocationPie, ValueChart, **StackedArea**, **BarChart**), **cash flow** (`savingRate`/`annualSummary` incl. **`netRate`** netto/lordo), **`netWorthGrowthSeries`** (crescita %/€ del patrimonio) e **registro accessi** (`describeDevice`). In più la **validazione oracolo** locale (`npm run validate:oracle`) e la **verifica indipendente** end-to-end (`npm run verify`) contro l'Excel. *Mancano:* altri test dei componenti (grafico multi-linea, dashboard, editor snapshot/cash flow). Piano in `docs/08-testing.md`.
 
-> **Fuori ambito (scelta del committente):** depositi/prelievi sui conti, **report/export**, **dettaglio del fondo crypto** (la voce "Crypto" resta nel patrimonio, ma senza drill-down dedicato).
+> **Fuori ambito (scelta del committente):** depositi/prelievi **sui conti** (il saldo mensile nello
+> snapshot basta), **report/export**, **dettaglio del fondo crypto** (la voce "Crypto" resta nel
+> patrimonio, ma senza drill-down dedicato).
+> *(Eccezione: il **Cash flow** — entrate/uscite/risparmio di **Antonio** — è ora **in ambito**, sia
+> dall'import sia con inserimento manuale dall'editor. È un flusso di reddito, distinto dai
+> depositi/prelievi conto per conto.)*
 
 ## Fase 0 — Fondamenta
 1. Leggi `data/patrimonio.xlsx` (se manca, fermati e chiedilo).
@@ -49,3 +61,5 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
 - Notifiche/promemoria per lo snapshot mensile.
 - Backup periodico dei dati. *(Distinto dall'export "report", fuori ambito: qui si intende solo la messa in sicurezza dei dati.)*
 - Eventuale aggiornamento quotazioni schedulato (valutare solo se si accetta il passaggio a Blaze).
+- **Sicurezza avanzata** (App Check, regole Firestore validate, eventuale MFA): **valutata e rinviata** dal committente — vedi `05`. *(Alert email su accessi sospetti richiederebbe Blaze/Cloud Functions → escluso.)*
+- **Verifica on-device dei provider quotazioni** (Yahoo in Tauri): assegnare le fonti ai titoli scoperti e controllare le quote dal vivo.

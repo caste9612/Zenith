@@ -1,7 +1,7 @@
 # 08 — Strategia di test e validazione
 
-> Stato: **pianificato (TODO)**. Questo documento definisce *cosa* e *come* testare. L'implementazione
-> della suite procede insieme allo sviluppo: **ogni nuova funzione di calcolo arriva con i suoi test**.
+> Stato: **in corso — 108 test verdi**. Questo documento definisce *cosa* e *come* testare.
+> Regola: **ogni nuova funzione di calcolo arriva con i suoi test**.
 
 ## Obiettivo
 Validare la **logica finanziaria** (la parte dove un bug falsa i numeri in modo silenzioso) mentre si
@@ -69,6 +69,7 @@ vincolo di progetto «dati finanziari fuori da git».
 - [x] aggregati `totalsByOwner` e `totalsByAssetClass` (con `assetsOnly` per la torta).
 - [x] `valueReturns`/`seriesMetrics` (`core/portfolio/metrics`) — indicatori del **patrimonio netto** dalla serie del netto: variazioni periodo su periodo, salto dei passi con base ≤ 0, CAGR/volatilità/maxDrawdown coerenti con le primitive, serie corta → zero.
 - [x] **serie storiche** `assetClassSeries`/`ownerSeries`/`accountSeries`/`savingRateSeries` — valori per classe/intestatario/voce/risparmio allineati ai mesi (0 dove la chiave manca; `null` nel risparmio).
+- [x] **`netWorthGrowthSeries`** (tasso di risparmio = crescita del patrimonio) — in **%** (`values`) e in **€ assoluto** (`deltas`); primo mese `null`, % `null` se patrimonio precedente ≤ 0 (ma l'assoluto resta), per intestatario o nucleo.
 - [ ] precompilazione del nuovo snapshot dai valori del mese precedente (logica nel componente).
 
 ### Componenti (shared)
@@ -80,6 +81,14 @@ vincolo di progetto «dati finanziari fuori da git».
 ### `core/portfolio/realized.ts` — `realized.spec.ts`
 - [x] `groupRealizedByYear` — anni decrescenti, totale per anno, ordine d'ingresso conservato; serie vuota → `[]`.
 - [x] `realizedTotal` — somma del P/L su tutte le operazioni.
+
+### `core/cashflow/cashflow.ts` — `cashflow.spec.ts`
+- [x] `savingRate` — `saved/income`; `null` se income manca o ≤ 0.
+- [x] `cumulativeSaved` — somma progressiva del risparmio.
+- [x] `annualSummary` — somme per anno (anni decrescenti) + **`netRate`** = netto/lordo (tassazione), `null` se lordo ≤ 0.
+
+### `features/settings/access-log.ts` — `access-log.spec.ts`
+- [x] `describeDevice` (puro) — etichetta dispositivo da piattaforma + user agent (App desktop/Web · browser · OS); priorità Edge > Chrome; user agent vuoto → solo la piattaforma.
 
 ### Indicatori (Sharpe & co.) — `core/portfolio/metrics.spec.ts`
 - [x] serie dei **rendimenti mensili** time-weighted dal track record (`monthlyReturns`: scorporo flussi, vendite, dividendi, salto base ≤ 0).
@@ -101,6 +110,23 @@ dove i dati reali non esistono. Eseguilo **in locale** prima del push quando cam
 
 Esito ultima esecuzione (63 mesi, feb 2021 → apr 2026): **A) 63/63 OK · B) 63/63 OK**; C) Δ ~12%
 atteso (prezzi del portafoglio fermi al 18/05/2025 vs bilancio apr 2026).
+
+## Verifica indipendente end-to-end — `npm run verify`
+`scripts/validate/verify.mjs` ri-parsa l'Excel **da zero** (non legge il seed) e ricontrolla ogni
+categoria del netto + ricalcola gli indicatori (netto e portafoglio), segnalando le discrepanze.
+Anch'essa **locale** (salta se l'Excel manca). Esito atteso: tutto torna tranne **2 refusi nell'Excel**
+del **2024-09** (subtotale "Condiviso" 200 vs 230; APERTE vs valore−investito), che l'app gestisce
+correttamente.
+
+## Riconciliazione Excel ↔ Zenith (workflow del committente)
+Il committente tiene aggiornati **Excel e Zenith in parallelo**; dopo ogni aggiornamento si
+**riconciliano** i due per controllare che i numeri **tornino**:
+1. metti l'Excel aggiornato in `data/` (gitignorato) → `npm run import:parse`;
+2. `npm run validate:oracle` (coerenza interna + colonna Total) **e** `npm run verify` (ri-parse +
+   indicatori);
+3. confronta i totali **app vs Excel** e annota le discrepanze (partendo dai 2 refusi noti di 2024-09);
+4. se serve riallineare i dati su Firestore, usa gli script di import (idempotenti). ⚠️ Sovrascrivono
+   `snapshots`/`cashFlow` eventualmente **inseriti/corretti a mano** in-app: rieseguili con cautela.
 
 ## Procedura per generare le fixture reali (quando l'Excel è disponibile)
 1. metti l'Excel in `data/` (resta fuori da git);

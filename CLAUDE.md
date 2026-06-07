@@ -6,7 +6,8 @@
 ## Cos'è
 App **personale a utente singolo** che sostituisce un Excel storico. Traccia:
 - il **patrimonio netto** (balance sheet), aggiornato **mensilmente** con dati manuali (conti bancari, fondo pensione, immobili, veicoli, liquidità, passività);
-- un **portafoglio titoli** con quotazioni, prezzo di carico, P&L e storico.
+- un **portafoglio titoli** con quotazioni, prezzo di carico, P&L e storico;
+- il **cash flow** mensile (entrate/uscite/risparmio, redditi di Antonio) con tassazione e tasso di risparmio.
 
 Due target dalla **stessa codebase**: **desktop Windows** e **Android**.
 

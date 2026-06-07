@@ -2,6 +2,8 @@
 
 Punto di partenza per Claude Code. Le decisioni di dettaglio sono nei documenti `01`–`05`; qui c'è la sintesi operativa.
 
+> **Nota:** questo è il prompt **originale** di avvio. Il progetto è ora **implementato e in uso** (Fasi 0–3 + cash flow, registro accessi, app desktop v0.5.0): per lo **stato attuale e i prossimi passi** parti da `09`.
+
 ## Obiettivo
 Costruisci un'app personale (utente singolo) per sostituire un Excel storico, che tracci:
 - il **patrimonio netto** (balance sheet), aggiornato **mensilmente** con dati manuali (conti, fondo pensione, immobili, veicoli, liquidità, passività);

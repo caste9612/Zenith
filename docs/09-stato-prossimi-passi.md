@@ -221,26 +221,29 @@
 
 ## Prossimi passi (ordine consigliato)
 
-> Traccia "analisi dati mancanti" → piani **A/C/D**: **A e C fatti** (vedi sopra; **C da popolare**
-> con `npm run import:trades` + `SEED_*` in `.env`). **Prossimo: Piano D** (cash flow:
-> entrate/uscite/risparmio dal foglio `CashFlow` → pagina dedicata; ⚠️ inverte "niente
-> depositi/prelievi" e "niente report"). In parallelo, dalla traccia quotazioni:
+> Piani **A/C/D** **fatti e popolati** (Cash flow 58 mesi, operazioni chiuse 102). Le rifiniture
+> richieste — layout mobile, grafici unificati, **tasso di risparmio sul patrimonio (%/€, per
+> intestatario, filtro anno)**, **editor Cash flow**, **tassazione per anno**, **registro accessi** —
+> sono **fatte, deployate (web) e incluse nella v0.5.0 (desktop)**.
 
-1. **Re-deploy web** (Indicatori + **sezioni storiche** della dashboard): `npm run deploy:hosting`.
-2. **Assegna le fonti e verifica on-device** (chiude il punto 4): build Tauri (`npm run tauri:build`
-   o tag `v*`). Nell'**editor strumento** usa la **ricerca** per assegnare Yahoo ai titoli scoperti
-   (TIBN→`TIBN.SW`, CKH→`0001.HK`, FLOW→`FLOW.AS`, ACOMO→`ACOMO.AS`) e **identificare PHO/POL**. Poi
-   controlla le quote dal vivo (prezzo + conversione EUR per HKD/CHF). Se reggono, via i prezzi
-   manuali per quei titoli. Eventuale 2ª fonte come fallback dall'editor.
-3. **(Opzionale) Altri test di componente**: grafico multi-linea, dashboard, snapshot editor; e la
-   precompilazione del nuovo snapshot dal mese precedente (logica nel componente).
-4. **(Opzionale) Indicatori del netto — rifiniture**: per ora sono cumulativi sull'intera serie;
-   eventuale finestra mobile o confronto con un benchmark.
+**Prossimo, su iniziativa del committente:** aggiornerà **Excel e Zenith in parallelo**, poi si fa la
+**riconciliazione** (vedi `08` → "Riconciliazione Excel ↔ Zenith"): `import:parse` + `validate:oracle`
++ `verify`, confronto **app vs Excel** partendo dai 2 refusi noti di **2024-09**. *(Memoria di progetto:
+`excel-zenith-reconciliation`.)*
+
+Aperti / opzionali:
+1. **Verifica on-device dei provider** (Yahoo in Tauri): assegnare Yahoo ai titoli scoperti
+   (TIBN→`TIBN.SW`, CKH→`0001.HK`, FLOW→`FLOW.AS`, ACOMO→`ACOMO.AS`), identificare **PHO/POL**,
+   controllare le quote dal vivo (prezzo + EUR per HKD/CHF) e togliere i prezzi manuali se reggono.
+2. **Confermare la classe di "Risparmi Michela"** (ora `cash`/Liquidità; alternativa `reserve`/Riserva).
+3. **Sicurezza avanzata** (App Check / regole validate / MFA) — valutata e **rinviata**, vedi `05`.
+4. **(Opzionale) Altri test di componente** (multi-linea, dashboard, editor snapshot/cash flow) e
+   rifiniture indicatori del netto (finestra mobile / benchmark).
 
 ## Mappa rapida dei file chiave
 
 - `src/app/app.ts|html|scss` — shell, **navbar** e pannello impostazioni.
-- `src/app/core/balance/net-worth.ts` — patrimonio netto (puro, **testato**).
+- `src/app/core/balance/net-worth.ts` — patrimonio netto + serie storiche + **`netWorthGrowthSeries`** (tasso di risparmio %/€) (puro, **testato**).
 - `src/app/core/portfolio/metrics.ts` — indicatori (puro, **testato**).
 - `src/app/core/portfolio/portfolio.service.ts` — transazioni → posizioni, **PMC/P&L** (**testato**).
 - `src/app/core/quotes/*` — provider (Finnhub/Alpha Vantage/**Yahoo** solo Tauri/manuale) + **FX** (**testati**); `quote-provider.ts` (`symbolForProvider`), `quote.service.ts` (**catena multi-provider con fallback**, `minIntervalMs`), `symbol-search.ts` (**ricerca** Yahoo+Finnhub). `parseYahooQuote` puro.
@@ -251,7 +254,9 @@
 - `src/app/core/data/*` — `BaseRepository`, repository (incl. `PortfolioHistoryRepository`), bridge realtime.
 - `scripts/import/*` — parser Excel + seed + dividendi + track record + **operazioni chiuse** (`closed-trades.mjs` → `import:trades`).
 - `src/app/core/portfolio/realized.ts` — operazioni chiuse → raggruppo per anno (**testato**); collezione `realizedTrades` (read-only).
-- `scripts/validate/oracle.mjs` — validazione **oracolo** locale (`npm run validate:oracle`), legge `data/seed.json`.
+- `src/app/features/cashflow/cashflow.ts|cashflow-editor.ts` — pagina **Cash flow** + **editor "Nuovo mese"**; logica in `core/cashflow/cashflow.ts` (`savingRate`/`annualSummary`/`netRate`, **testata**); collezione `cashFlow`.
+- `src/app/features/settings/access-log.ts` — **registro accessi** (`describeDevice`, **testato**); collezione `accessLog`, scritta al login (`AccessLogRepository`).
+- `scripts/validate/oracle.mjs` · `verify.mjs` — **oracolo** (`validate:oracle`, legge `data/seed.json`) e **verifica indipendente** end-to-end (`verify`, ri-parsa l'Excel). Entrambi locali.
 - `src/app/core/portfolio/metrics.ts` — indicatori titoli + `valueReturns`/`seriesMetrics` per il **patrimonio netto** (**testati**).
 - `.github/workflows/` — `test.yml` (CI test) · `release-windows.yml` (build+release Tauri).
 
