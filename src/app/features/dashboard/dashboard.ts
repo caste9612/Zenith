@@ -169,34 +169,40 @@ const OWNER_COLORS: Record<Owner, string> = {
           <h2 class="section-title">Composizione nel tempo</h2>
           <div class="card">
             <div class="row row-between chart-head">
-              <span class="label">Per classe di asset</span>
               <div class="segmented">
-                @for (f of ownerFilters; track f.value) {
-                  <button
-                    type="button"
-                    [class.active]="classOwner() === f.value"
-                    (click)="classOwner.set(f.value)"
-                  >
-                    {{ f.label }}
-                  </button>
-                }
+                <button
+                  type="button"
+                  [class.active]="composeMode() === 'class'"
+                  (click)="composeMode.set('class')"
+                >
+                  Per classe
+                </button>
+                <button
+                  type="button"
+                  [class.active]="composeMode() === 'owner'"
+                  (click)="composeMode.set('owner')"
+                >
+                  Per intestatario
+                </button>
               </div>
+              @if (composeMode() === 'class') {
+                <div class="segmented">
+                  @for (f of ownerFilters; track f.value) {
+                    <button
+                      type="button"
+                      [class.active]="classOwner() === f.value"
+                      (click)="classOwner.set(f.value)"
+                    >
+                      {{ f.label }}
+                    </button>
+                  }
+                </div>
+              }
             </div>
             @defer (on viewport) {
               <app-stacked-area-chart
-                [labels]="classStacks().labels"
-                [series]="classStacks().series"
-              />
-            } @placeholder {
-              <div class="chart-ph"></div>
-            }
-          </div>
-          <div class="card">
-            <span class="label">Per intestatario</span>
-            @defer (on viewport) {
-              <app-stacked-area-chart
-                [labels]="ownerStacks().labels"
-                [series]="ownerStacks().series"
+                [labels]="composeStacks().labels"
+                [series]="composeStacks().series"
               />
             } @placeholder {
               <div class="chart-ph"></div>
@@ -314,6 +320,8 @@ const OWNER_COLORS: Record<Owner, string> = {
       }
       .chart-head {
         margin-bottom: var(--space-2);
+        flex-wrap: wrap;
+        gap: var(--space-2);
       }
       .segmented {
         display: inline-flex;
@@ -456,6 +464,15 @@ export class DashboardPage {
     const o = this.savingOwner();
     return netWorthGrowthSeries(this.accounts(), this.snapshots(), o === 'all' ? undefined : o);
   });
+
+  /**
+   * Composizione nel tempo UNIFICATA: un solo grafico ad area con toggle della dimensione
+   * (per classe di asset / per intestatario), invece di due grafici quasi identici.
+   */
+  protected readonly composeMode = signal<'class' | 'owner'>('class');
+  protected readonly composeStacks = computed(() =>
+    this.composeMode() === 'owner' ? this.ownerStacks() : this.classStacks(),
+  );
 
   /** Voci selezionabili per il drill (tutte le voci attive). */
   protected readonly accountOptions = computed(() =>
