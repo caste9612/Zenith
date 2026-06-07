@@ -5,10 +5,11 @@ import { AuthService } from './core/auth/auth.service';
 import { ThemePreference } from './core/models';
 import { ThemeService } from './core/theme/theme.service';
 import { UpdaterService } from './core/platform/updater';
+import { AccessLogList } from './features/settings/access-log';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AccessLogList],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

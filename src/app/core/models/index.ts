@@ -8,4 +8,5 @@ export * from './snapshot';
 export * from './portfolio-history';
 export * from './realized-trade';
 export * from './cashflow';
+export * from './access-log';
 export * from './settings';

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { AccessLogRepository } from '../../core/data/repositories';
 
 @Component({
   selector: 'app-login',
@@ -128,6 +129,7 @@ import { AuthService } from '../../core/auth/auth.service';
 export class LoginPage {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly accessLog = inject(AccessLogRepository);
 
   protected readonly configured = this.auth.configured;
   protected email = '';
@@ -141,6 +143,7 @@ export class LoginPage {
     this.busy.set(true);
     try {
       await this.auth.login(this.email, this.password);
+      void this.accessLog.record(); // registra l'accesso (best-effort, non blocca il login)
       await this.router.navigateByUrl('/dashboard');
     } catch (e) {
       this.error.set(this.toMessage(e));

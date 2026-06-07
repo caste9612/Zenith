@@ -182,6 +182,10 @@
 .modal-body .setting.nav:hover {
   background: var(--surface-hover);
 }
+/* Voce a larghezza piena (es. registro accessi): impila invece di affiancare. */
+.modal-body .setting.block {
+  display: block;
+}
 .modal-body .chev {
   color: var(--text-muted);
   font-size: 1.4rem;

@@ -413,6 +413,12 @@
             {{ auth.configured ? 'Configurato' : 'Da configurare' }}
           </span>
         </div>
+
+        @if (auth.isLoggedIn()) {
+          <div class="setting block">
+            <app-access-log />
+          </div>
+        }
       </div>
     </div>
   }

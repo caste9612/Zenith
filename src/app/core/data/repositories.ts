@@ -1,6 +1,7 @@
 import { Injectable, Signal, inject } from '@angular/core';
-import { doc, getDoc, orderBy, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, limit, orderBy, setDoc } from 'firebase/firestore';
 import {
+  AccessLogEntry,
   Account,
   AppSettings,
   CashFlowMonth,
@@ -14,6 +15,7 @@ import {
 } from '../models';
 import { AuthService } from '../auth/auth.service';
 import { FirebaseService } from '../firebase/firebase';
+import { isTauri } from '../platform/tauri';
 import { BaseRepository, entityConverter } from './firestore';
 
 @Injectable({ providedIn: 'root' })
@@ -71,6 +73,45 @@ export class CashFlowRepository extends BaseRepository<CashFlowMonth> {
   /** Flusso mensile in tempo reale, ordine cronologico (chiamare in un contesto di injection). */
   connectByDate(): Signal<CashFlowMonth[]> {
     return this.connect(orderBy('date', 'asc'));
+  }
+}
+
+/**
+ * Registro accessi (users/{uid}/accessLog): una voce per login con credenziali.
+ * Sola visibilità per l'utente (rilevamento manuale di accessi insoliti).
+ */
+@Injectable({ providedIn: 'root' })
+export class AccessLogRepository extends BaseRepository<AccessLogEntry> {
+  protected readonly collectionName = 'accessLog';
+
+  /** Accessi più recenti in tempo reale (chiamare in un contesto di injection). */
+  connectRecent(n = 8): Signal<AccessLogEntry[]> {
+    return this.connect(orderBy('at', 'desc'), limit(n));
+  }
+
+  /**
+   * Registra l'accesso corrente. Best-effort: non blocca né fa fallire il login.
+   * Usa `currentUser` (disponibile subito dopo il sign-in) invece del Signal di auth,
+   * che viene aggiornato in modo asincrono da onAuthStateChanged.
+   */
+  async record(): Promise<void> {
+    try {
+      const uid = this.fb.auth.currentUser?.uid;
+      if (!uid) return;
+      const entry: AccessLogEntry = {
+        at: new Date(),
+        platform: isTauri() ? 'desktop' : 'web',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      };
+      const ref = doc(
+        collection(this.fb.db, 'users', uid, 'accessLog').withConverter(
+          entityConverter<AccessLogEntry>(),
+        ),
+      );
+      await setDoc(ref, { ...entry, id: ref.id });
+    } catch {
+      /* best-effort: il registro accessi non deve mai bloccare il login */
+    }
   }
 }
 
