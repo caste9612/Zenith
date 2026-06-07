@@ -71,7 +71,7 @@ const ACCOUNTS = [
     id: 'risparmi-michela',
     name: 'Risparmi Michela',
     owner: 'michela',
-    assetClass: 'other',
+    assetClass: 'cash',
     col: 9,
   },
   {
