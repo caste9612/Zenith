@@ -19,6 +19,24 @@ import {
   trackRecordSheet,
   SheetData,
 } from './sheets';
+import { barChartPng, netWorthChartPng, pieChartPng } from './charts';
+import { netWorthGrowthSeries, totalsByAssetClass } from '../balance/net-worth';
+import { ASSET_CLASS_LABELS } from '../models';
+import type { Account, AssetClass, Snapshot } from '../models';
+
+/** Colore per classe (allineato alla dashboard) per la torta del foglio "Grafici". */
+const CLASS_COLORS: Record<AssetClass, string> = {
+  equity: '#3b5bdb',
+  crypto: '#f59f00',
+  pension: '#7048e8',
+  cash: '#12b886',
+  reserve: '#1098ad',
+  emergency: '#e64980',
+  realEstate: '#2f9e44',
+  vehicle: '#e8590c',
+  liability: '#e03131',
+  other: '#868e96',
+};
 
 /**
  * Export di tutti i dati dell'app in un `.xlsx` (backup + sostituzione dell'Excel). **Lato client**:
@@ -71,6 +89,7 @@ export class ExportService {
     wb.creator = 'Zenith';
     wb.created = new Date();
     for (const s of sheets) this.render(wb, s);
+    this.addCharts(wb, accounts, snapshots);
 
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -102,6 +121,36 @@ export class ExportService {
       else if (pct.has(i)) col.numFmt = '0.0%';
       else if (dat.has(i)) col.numFmt = 'mmm yyyy';
     });
+  }
+
+  /** Foglio "Grafici": immagini PNG di patrimonio (linea), ripartizione (torta) e tasso (barre). */
+  private addCharts(wb: ExcelWorkbook, accounts: Account[], snapshots: Snapshot[]): void {
+    const latest = snapshots.at(-1);
+    if (!latest || snapshots.length < 2) return;
+    const pngs = [
+      netWorthChartPng(snapshots.map((s) => ({ date: s.date, value: s.netWorth }))),
+      pieChartPng(
+        [...totalsByAssetClass(accounts, latest.values, { assetsOnly: true }).entries()].map(
+          ([c, v]) => ({ label: ASSET_CLASS_LABELS[c], value: v, color: CLASS_COLORS[c] ?? '#868e96' }),
+        ),
+      ),
+      barChartPng(
+        netWorthGrowthSeries(accounts, snapshots).values.map((v, i) => ({
+          date: snapshots[i].date,
+          value: v,
+        })),
+        'Tasso di risparmio (crescita del patrimonio, mese su mese)',
+      ),
+    ].filter((p): p is string => !!p);
+    if (!pngs.length) return;
+
+    const ws = wb.addWorksheet('Grafici');
+    let row = 0;
+    for (const dataUrl of pngs) {
+      const id = wb.addImage({ base64: dataUrl.split(',')[1], extension: 'png' });
+      ws.addImage(id, { tl: { col: 0, row }, ext: { width: 900, height: 380 } });
+      row += 21;
+    }
   }
 
   /** Download lato browser (web/PWA). Su desktop Tauri il "salva con nome" arriva in Fase 4. */
@@ -139,11 +188,13 @@ interface ExcelWorksheet {
   addRow(values: unknown[]): unknown;
   getRow(i: number): ExcelRow;
   getColumn(i: number): ExcelColumn;
+  addImage(imageId: number, range: unknown): void;
   views: unknown;
 }
 interface ExcelWorkbook {
   creator: string;
   created: Date;
   addWorksheet(name: string): ExcelWorksheet;
+  addImage(opts: { base64: string; extension: string }): number;
   xlsx: { writeBuffer(): Promise<ArrayBuffer> };
 }
