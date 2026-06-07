@@ -7,4 +7,5 @@ export * from './transaction';
 export * from './snapshot';
 export * from './portfolio-history';
 export * from './realized-trade';
+export * from './cashflow';
 export * from './settings';

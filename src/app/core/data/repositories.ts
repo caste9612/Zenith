@@ -3,6 +3,7 @@ import { doc, getDoc, orderBy, setDoc } from 'firebase/firestore';
 import {
   Account,
   AppSettings,
+  CashFlowMonth,
   DEFAULT_SETTINGS,
   Holding,
   Instrument,
@@ -61,6 +62,15 @@ export class RealizedTradesRepository extends BaseRepository<RealizedTrade> {
   /** Operazioni chiuse in tempo reale, dalla più recente (chiamare in un contesto di injection). */
   connectByDate(): Signal<RealizedTrade[]> {
     return this.connect(orderBy('date', 'desc'));
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class CashFlowRepository extends BaseRepository<CashFlowMonth> {
+  protected readonly collectionName = 'cashFlow';
+  /** Flusso mensile in tempo reale, ordine cronologico (chiamare in un contesto di injection). */
+  connectByDate(): Signal<CashFlowMonth[]> {
+    return this.connect(orderBy('date', 'asc'));
   }
 }
 
