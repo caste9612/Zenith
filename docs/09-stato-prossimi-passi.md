@@ -6,7 +6,9 @@
 > benchmark, gestione conti, release Windows, refactor patrimonio netto, suite di test + CI,
 > validazione oracolo Excel + indicatori sul patrimonio netto + provider Yahoo (app nativa),
 > **catena quotazioni multi-provider con fallback + ricerca titoli multi-provider**, **storico del
-> patrimonio in dashboard (composizione/drill/risparmio)**.
+> patrimonio in dashboard (composizione/drill/risparmio)**, **revisione UI (logo vero, spaziatura,
+> assi X/Y su tutti i grafici, split intestatario) + pagina Cash flow (Piano D) + verifica
+> indipendente (`npm run verify`) + auto-updater armato (v0.3.0)**.
 
 ## Dove si lavora (branch)
 
@@ -27,7 +29,8 @@
    release Windows). `.env.example` elenca i campi.
 3. `npm start` → genera la config + `ng serve` su http://localhost:4200 (login con le credenziali utente).
 4. `npm run build` → build in `dist/zenith/browser`.
-5. `npm run test:ci` → **96 test** headless (richiede **Chrome** installato).
+5. `npm run test:ci` → **99 test** headless (richiede **Chrome** installato). `npm run verify` →
+   verifica indipendente end-to-end contro l'Excel (locale; salta se l'Excel manca).
 6. **Import dall'Excel** (Excel gitignorato, es. `data/Balance Sheet.xlsx`):
    `import:parse` · `import:seed` · `import:openings` · `import:dividends` · `import:trackrecord`.
    Dopo `import:parse`: `npm run validate:oracle` confronta i totali calcolati con l'Excel
@@ -35,16 +38,20 @@
 7. **Deploy web** (manuale): `npm run deploy:hosting`. **App Windows**: push di un tag `v*` →
    GitHub Action builda e pubblica l'installer nei Releases.
 
-## Stato produzione — WEB ALLINEATA ✅ · Windows v0.2.0 in pubblicazione
+## Stato produzione — WEB ALLINEATA ✅ · Windows v0.3.0 (auto-updater ATTIVO)
 
-- Sito: **https://zenith-5768d.web.app** — **allineato a `main`** (deploy fatto): dashboard storica +
-  Indicatori, pagina Rendimento + Operazioni chiuse, editor/ricerca multi-provider, ecc. Re-deploy
-  dopo nuove modifiche: **`npm run deploy:hosting`** (CLI loggata come `wcaste1996@gmail.com`).
-  *(Sul web le quote auto non si aggiornano se mancano le chiavi Finnhub/Alpha Vantage in `.env`; le
-  sezioni `Operazioni chiuse`/`tasso di risparmio` restano vuote finché non si importano i dati.)*
-- App Windows: tag **`v0.2.0`** pushato → la GitHub Action builda l'installer (Releases). Prima
-  release con l'**auto-updater** (dormiente finché non si arma la firma — vedi sezione "Auto-updater").
-  Aggiornamento 0.1.0 → 0.2.0 **manuale** una tantum. **Yahoo** funziona solo qui (nativo).
+- Sito: **https://zenith-5768d.web.app** — **allineato a `main`** (deploy fatto): UI rivista (logo
+  vero, spaziatura coerente, **assi X/Y su tutti i grafici**), dashboard storica + Indicatori +
+  **split intestatario** sul grafico per classe, pagina **Rendimento** + Operazioni chiuse, **pagina
+  Cash flow** (Piano D), editor/ricerca multi-provider. Re-deploy: **`npm run deploy:hosting`** (CLI
+  loggata come `wcaste1996@gmail.com`).
+  *(Quote auto sul web solo con chiavi Finnhub/AV in `.env`; le pagine `Operazioni chiuse`/`Cash flow`
+  restano vuote finché non lanci `import:trades`/`import:cashflow` con `SEED_*`.)*
+- App Windows: **v0.3.0** pubblicata (Releases) con installer **firmato** + `latest.json` →
+  **auto-updater ATTIVO**: la v0.2.0 installata si aggiorna da sola al primo avvio dopo la v0.3.0; da
+  lì ogni tag `v*` futuro è automatico. Secret `TAURI_SIGNING_PRIVATE_KEY` impostato (chiave privata in
+  `~/.tauri/zenith-updater.key`, fuori dal repo; helper `scripts/setup-updater-secret.mjs`). **Yahoo**
+  funziona solo qui (nativo).
 
 ## Fatto in questa sessione — quotazioni multi-provider + ricerca
 
@@ -92,12 +99,21 @@
   sanity-check somma-vs-TOTALE Excel OK in ogni mese). Sezione **Operazioni chiuse** (per anno) nella
   pagina Rendimento; helper puro `groupRealizedByYear` (testato). ⚠️ **Da popolare**:
   `npm run import:trades` con `SEED_*` in `.env` (oggi vuoti) — finché non lo lanci, la sezione non compare.
-- **Piano D — Cash flow / risparmio**: prossimo (richiede `SEED_*` in `.env` per l'import).
+- **Piano D — Cash flow / risparmio** ✅: pagina **Cash flow** (voce navbar) + collezione `cashFlow`
+  + parser `import:cashflow` (58 mesi, dati di nucleo). Entrate/uscite, risparmio €/mese, **tasso di
+  risparmio %** (sostituisce quello rotto, rimosso dalla dashboard), cumulato, riepilogo annuo. ⚠️ **Da
+  popolare**: `npm run import:cashflow` con `SEED_*`.
+- **Revisione UI (Tappe 1-3)** ✅: logo vero in app, spaziatura/ritmo coerente delle pagine, **assi
+  X/Y + griglia su tutti i grafici** (area / area-impilata / multi-linea / barre), **split intestatario**
+  (Tutti/Antonio/Michela/Condiviso) sul grafico per classe.
+- **Verifica indipendente** ✅: `npm run verify` ri-parsa l'Excel e ricontrolla ogni categoria +
+  ricalcola gli indicatori. Tutto torna tranne **2 refusi nell'Excel** (mese 2024-09: subtotale
+  "Condiviso" 200 vs 230; APERTE vs valore−investito) che l'app gestisce correttamente.
 
 ## Fatto in questa sessione — Auto-updater (app Windows)
 
-> L'app desktop si auto-aggiorna dai **GitHub Releases** (resta gratis). Configurato tutto; per
-> attivarlo davvero resta da **armare la firma** (1 Secret) alla release successiva.
+> L'app desktop si auto-aggiorna dai **GitHub Releases** (resta gratis). **Armato e ATTIVO dalla
+> v0.3.0** (Secret di firma impostato).
 
 - **Tauri updater** (`tauri-plugin-updater`, solo desktop) + `process` per il riavvio; capability
   `capabilities/desktop.json`; `plugins.updater` in `tauri.conf.json` con **pubkey** ed **endpoint**
@@ -107,11 +123,12 @@
   **segreti Firebase** già nei GitHub Secrets (niente firma). L'installazione 0.1.0 → 0.2.0 è
   **manuale** una tantum (la 0.1.0 non ha l'updater). L'updater nella 0.2.0 è attivo ma "dormiente"
   (l'endpoint non ha ancora un `latest.json`).
-- **Per ARMARE l'auto-update (dalla v0.3.0):** (1) aggiungi 2 GitHub Secrets —
-  `TAURI_SIGNING_PRIVATE_KEY` = contenuto di `~/.tauri/zenith-updater.key` (privata, **mai** nel repo)
-  e `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = **vuota**; (2) metti `createUpdaterArtifacts: true` in
-  `tauri.conf.json`; (3) tag `v0.3.0`. Da lì la 0.2.0 trova la 0.3.0 e si aggiorna da sola. La
-  **chiave pubblica** è già in config; la **privata** sta in `~/.tauri/zenith-updater.key` (fuori dal repo).
+- **Armato (v0.3.0)** ✅: Secret `TAURI_SIGNING_PRIVATE_KEY` impostato (via API con
+  `scripts/setup-updater-secret.mjs`, lanciato dal committente), `createUpdaterArtifacts: true`, tag
+  `v0.3.0` pubblicato con installer **firmato** + `latest.json`. La v0.2.0 installata si aggiorna da
+  sola alla v0.3.0; da lì ogni tag `v*` è automatico. Chiave **pubblica** in config; **privata** in
+  `~/.tauri/zenith-updater.key` (fuori dal repo); password **vuota** (Secret non necessario).
+  **Per le prossime release basta `git tag vX.Y.Z && git push --tags`.**
 
 ## Fatto nella sessione precedente (i 4 "prossimi passi" del handoff precedente)
 
@@ -171,7 +188,9 @@
 
 ## Decisioni di prodotto (da rispettare)
 
-- **Niente depositi/prelievi** sui conti; **niente report/export**; **crypto** senza drill-down.
+- **Niente depositi/prelievi** sui conti; **crypto** senza drill-down. *(Eccezione decisa dal
+  committente: la pagina **Cash flow** (Piano D) mostra entrate/uscite/risparmio **di nucleo** dal
+  foglio CashFlow — non per intestatario.)*
 - **Indicatori**: rendimenti **time-weighted**; risk-free Sharpe **0%** (`RISK_FREE_ANNUAL`).
 - **Rendimento/benchmark** in **pagina dedicata** (`/portfolio/rendimento`), non dentro il portafoglio.
 - **Dividendi / track record / realizzato / benchmark** importati dall'Excel (dati storici, sola lettura).
