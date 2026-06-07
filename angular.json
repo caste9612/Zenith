@@ -23,6 +23,7 @@
           "options": {
             "browser": "src/main.ts",
             "polyfills": [],
+            "allowedCommonJsDependencies": ["exceljs"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [

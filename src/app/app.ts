@@ -5,6 +5,7 @@ import { AuthService } from './core/auth/auth.service';
 import { ThemePreference } from './core/models';
 import { ThemeService } from './core/theme/theme.service';
 import { UpdaterService } from './core/platform/updater';
+import { ExportService } from './core/export/export.service';
 import { AccessLogList } from './features/settings/access-log';
 
 @Component({
@@ -18,10 +19,13 @@ export class App {
   private readonly themeSvc = inject(ThemeService);
   protected readonly auth = inject(AuthService);
   private readonly updaterSvc = inject(UpdaterService);
+  private readonly exportSvc = inject(ExportService);
 
   /** Versione di un aggiornamento pronto (solo app nativa Tauri), altrimenti null. */
   protected readonly updateAvailable = this.updaterSvc.available;
   protected readonly updating = signal(false);
+  /** Export Excel in corso. */
+  protected readonly exporting = signal(false);
 
   constructor() {
     // Controllo aggiornamenti non bloccante all'avvio (no-op nel browser/PWA).
@@ -73,6 +77,16 @@ export class App {
       await this.updaterSvc.installAndRelaunch(); // in caso di successo l'app si riavvia
     } catch {
       this.updating.set(false);
+    }
+  }
+
+  protected async exportExcel(): Promise<void> {
+    if (this.exporting()) return;
+    this.exporting.set(true);
+    try {
+      await this.exportSvc.exportWorkbook();
+    } finally {
+      this.exporting.set(false);
     }
   }
 }

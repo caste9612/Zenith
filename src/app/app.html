@@ -380,6 +380,16 @@
 
         <div class="setting">
           <div>
+            <div class="label">Esporta in Excel</div>
+            <div class="muted">Scarica tutti i dati in un file .xlsx (backup o sostituzione dell'Excel).</div>
+          </div>
+          <button class="btn btn-primary" type="button" [disabled]="exporting()" (click)="exportExcel()">
+            {{ exporting() ? 'Esporto…' : 'Esporta' }}
+          </button>
+        </div>
+
+        <div class="setting">
+          <div>
             <div class="label">Valuta base</div>
             <div class="muted">Valuta di riferimento del patrimonio.</div>
           </div>
