@@ -123,3 +123,26 @@ export function savingRateSeries(snapshots: readonly BalanceSnapshot[]): {
     values: snapshots.map((s) => s.savingRate ?? null),
   };
 }
+
+/**
+ * Tasso di risparmio "basato sul patrimonio": crescita % del patrimonio netto mese su mese →
+ * `values[i] = (NW[i] − NW[i-1]) / NW[i-1]`. Un trasferimento tra conti non cambia il patrimonio,
+ * quindi (a differenza del cash flow) NON appare come spesa. `null` dove non calcolabile (primo
+ * mese, o patrimonio precedente ≤ 0). Con `owner` limita a un intestatario; senza, l'intero nucleo.
+ */
+export function netWorthGrowthSeries(
+  accounts: readonly BalanceAccount[],
+  snapshots: readonly BalanceSnapshot[],
+  owner?: Owner,
+): { labels: Date[]; values: (number | null)[] } {
+  const sel = owner ? accounts.filter((a) => a.owner === owner) : accounts;
+  const nw = snapshots.map((s) => computeNetWorth(sel, s.values));
+  return {
+    labels: snapshots.map((s) => s.date),
+    values: nw.map((v, i) => {
+      if (i === 0) return null;
+      const prev = nw[i - 1];
+      return prev > 0 ? (v - prev) / prev : null;
+    }),
+  };
+}

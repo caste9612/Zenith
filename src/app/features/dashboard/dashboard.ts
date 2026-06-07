@@ -10,12 +10,14 @@ import { AssetClass, ASSET_CLASS_LABELS, Owner, OWNER_LABELS, OWNERS } from '../
 import {
   accountSeries,
   assetClassSeries,
+  netWorthGrowthSeries,
   ownerSeries,
   totalsByAssetClass,
   totalsByOwner,
 } from '../../core/balance/net-worth';
 import { seriesMetrics } from '../../core/portfolio/metrics';
 import { AllocationPieComponent, PieItem } from '../../shared/allocation-pie';
+import { BarChartComponent } from '../../shared/bar-chart';
 import { StackedAreaChartComponent, StackSeries } from '../../shared/stacked-area-chart';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
 
@@ -44,7 +46,7 @@ const OWNER_COLORS: Record<Owner, string> = {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [ValueChartComponent, AllocationPieComponent, StackedAreaChartComponent],
+  imports: [ValueChartComponent, AllocationPieComponent, StackedAreaChartComponent, BarChartComponent],
   template: `
     <section class="page">
       <header class="page-header">
@@ -137,6 +139,33 @@ const OWNER_COLORS: Record<Owner, string> = {
         </div>
 
         @if (snapshots().length >= 2) {
+          <h2 class="section-title">Tasso di risparmio</h2>
+          <div class="card">
+            <div class="row row-between chart-head">
+              <span class="label">Crescita del patrimonio, mese su mese</span>
+              <div class="segmented">
+                @for (f of savingFilters; track f.value) {
+                  <button
+                    type="button"
+                    [class.active]="savingOwner() === f.value"
+                    (click)="savingOwner.set(f.value)"
+                  >
+                    {{ f.label }}
+                  </button>
+                }
+              </div>
+            </div>
+            @defer (on viewport) {
+              <app-bar-chart
+                [labels]="savingRate().labels"
+                [values]="savingRate().values"
+                format="percent"
+              />
+            } @placeholder {
+              <div class="chart-ph"></div>
+            }
+          </div>
+
           <h2 class="section-title">Composizione nel tempo</h2>
           <div class="card">
             <div class="row row-between chart-head">
@@ -411,6 +440,21 @@ export class DashboardPage {
       values: byKey.get(o)!,
     }));
     return { labels, series };
+  });
+
+  /**
+   * Tasso di risparmio = crescita % del patrimonio netto mese su mese (per intestatario o nucleo).
+   * Basato sul patrimonio, così un trasferimento tra conti non appare come spesa.
+   */
+  protected readonly savingOwner = signal<'all' | Owner>('all');
+  protected readonly savingFilters: { value: 'all' | Owner; label: string }[] = [
+    { value: 'all', label: 'Nucleo' },
+    { value: 'antonio', label: 'Antonio' },
+    { value: 'michela', label: 'Michela' },
+  ];
+  protected readonly savingRate = computed(() => {
+    const o = this.savingOwner();
+    return netWorthGrowthSeries(this.accounts(), this.snapshots(), o === 'all' ? undefined : o);
   });
 
   /** Voci selezionabili per il drill (tutte le voci attive). */

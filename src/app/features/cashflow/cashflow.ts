@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CashFlowRepository } from '../../core/data';
-import { annualSummary, cumulativeSaved, savingRate } from '../../core/cashflow/cashflow';
-import { formatEur, formatPercentPlain, formatSignedEur } from '../../core/money/format';
+import { annualSummary, cumulativeSaved } from '../../core/cashflow/cashflow';
+import { formatEur, formatSignedEur } from '../../core/money/format';
 import { BarChartComponent } from '../../shared/bar-chart';
 import { LineSeries, MultiLineChartComponent } from '../../shared/multi-line-chart';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
@@ -36,11 +36,6 @@ const COLORS = { income: '#1f9d57', expenses: '#e8590c' };
             <span class="muted small">{{ period() }}</span>
           </div>
           <div class="card mini">
-            <span class="label">Tasso di risparmio medio</span>
-            <span class="num value">{{ pctPlain(avgRate()) }}</span>
-            <span class="muted small">risparmio / entrate</span>
-          </div>
-          <div class="card mini">
             <span class="label">Entrate · uscite</span>
             <span class="num value">{{ eur(totalIncome()) }}</span>
             <span class="muted small">uscite {{ eur(totalExpenses()) }}</span>
@@ -65,15 +60,6 @@ const COLORS = { income: '#1f9d57', expenses: '#e8590c' };
           }
         </div>
 
-        <h2 class="section-title">Tasso di risparmio</h2>
-        <div class="card">
-          @defer (on viewport) {
-            <app-bar-chart [labels]="labels()" [values]="rateValues()" format="percent" />
-          } @placeholder {
-            <div class="ph"></div>
-          }
-        </div>
-
         <h2 class="section-title">Risparmio cumulato</h2>
         <div class="card">
           @defer (on viewport) {
@@ -92,9 +78,6 @@ const COLORS = { income: '#1f9d57', expenses: '#e8590c' };
                 >netto {{ eur(y.income) }} · uscite {{ eur(y.expenses) }}</span
               >
               <span class="spacer"></span>
-              @if (y.rate !== null) {
-                <span class="muted small rate">{{ pctPlain(y.rate) }}</span>
-              }
               <span class="num value" [class.gain]="y.saved > 0" [class.loss]="y.saved < 0">{{
                 signed(y.saved)
               }}</span>
@@ -177,17 +160,12 @@ export class CashFlowPage {
   protected readonly totalExpenses = computed(() =>
     this.months().reduce((s, m) => s + (m.expenses ?? 0), 0),
   );
-  protected readonly avgRate = computed(() => {
-    const i = this.totalIncome();
-    return i > 0 ? this.totalSaved() / i : 0;
-  });
 
   protected readonly inOutSeries = computed<LineSeries[]>(() => [
     { name: 'Entrate', color: COLORS.income, values: this.months().map((m) => m.income) },
     { name: 'Uscite', color: COLORS.expenses, values: this.months().map((m) => m.expenses) },
   ]);
   protected readonly savedValues = computed(() => this.months().map((m) => m.saved));
-  protected readonly rateValues = computed(() => this.months().map((m) => savingRate(m)));
   protected readonly cumulative = computed<ChartPoint[]>(() => cumulativeSaved(this.months()));
   protected readonly years = computed(() => annualSummary(this.months()));
 
@@ -203,8 +181,5 @@ export class CashFlowPage {
   }
   protected signed(v: number): string {
     return formatSignedEur(v);
-  }
-  protected pctPlain(v: number): string {
-    return formatPercentPlain(v);
   }
 }

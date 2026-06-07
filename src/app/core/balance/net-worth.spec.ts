@@ -5,6 +5,7 @@ import {
   BalanceAccount,
   BalanceSnapshot,
   computeNetWorth,
+  netWorthGrowthSeries,
   ownerSeries,
   savingRateSeries,
   totalsByAssetClass,
@@ -100,5 +101,33 @@ describe('balance/net-worth · serie storiche', () => {
     const { labels, values } = savingRateSeries(snaps);
     expect(labels.length).toBe(3);
     expect(values).toEqual([0.2, null, 0.3]);
+  });
+
+  it('netWorthGrowthSeries: crescita % del patrimonio, primo mese null', () => {
+    // Nucleo: 350 → 390 → 300
+    const all = netWorthGrowthSeries(accounts, snaps);
+    expect(all.labels.length).toBe(3);
+    expect(all.values[0]).toBeNull();
+    expect(all.values[1]!).toBeCloseTo(40 / 350, 10);
+    expect(all.values[2]!).toBeCloseTo(-90 / 390, 10);
+
+    // Per intestatario (Antonio): 150 → 180 → 80
+    const ant = netWorthGrowthSeries(accounts, snaps, 'antonio');
+    expect(ant.values[0]).toBeNull();
+    expect(ant.values[1]!).toBeCloseTo(0.2, 10);
+    expect(ant.values[2]!).toBeCloseTo(-100 / 180, 10);
+  });
+
+  it('netWorthGrowthSeries: null quando il patrimonio precedente è ≤ 0', () => {
+    const a2 = [acc('x', 'antonio', 'cash')];
+    const s2: BalanceSnapshot[] = [
+      { date: new Date(2024, 0, 31), values: { x: 0 } },
+      { date: new Date(2024, 1, 29), values: { x: 100 } },
+      { date: new Date(2024, 2, 31), values: { x: 150 } },
+    ];
+    const { values } = netWorthGrowthSeries(a2, s2);
+    expect(values[0]).toBeNull(); // primo mese
+    expect(values[1]).toBeNull(); // base 0 → null
+    expect(values[2]!).toBeCloseTo(0.5, 10); // 100 → 150
   });
 });
