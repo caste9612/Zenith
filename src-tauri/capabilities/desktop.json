@@ -4,5 +4,19 @@
   "description": "Auto-update e riavvio: solo desktop (su Android l'aggiornamento passa dallo store).",
   "platforms": ["macOS", "windows", "linux"],
   "windows": ["main"],
-  "permissions": ["updater:default", "process:default"]
+  "permissions": [
+    "updater:default",
+    "process:default",
+    "dialog:default",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$HOME/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$DOCUMENT/**" }
+      ]
+    }
+  ]
 }

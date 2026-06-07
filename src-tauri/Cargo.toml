@@ -28,6 +28,9 @@ tauri-plugin-log = "2"
 tauri-plugin-http = "2"
 # Riavvio dopo l'installazione dell'aggiornamento.
 tauri-plugin-process = "2"
+# Export: finestra "Salva con nome" + scrittura file su desktop.
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
 
 # Auto-update: solo desktop (su Android l'aggiornamento passa dallo store).
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

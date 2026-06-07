@@ -23,6 +23,7 @@ import { barChartPng, netWorthChartPng, pieChartPng } from './charts';
 import { netWorthGrowthSeries, totalsByAssetClass } from '../balance/net-worth';
 import { ASSET_CLASS_LABELS } from '../models';
 import type { Account, AssetClass, Snapshot } from '../models';
+import { isTauri } from '../platform/tauri';
 
 /** Colore per classe (allineato alla dashboard) per la torta del foglio "Grafici". */
 const CLASS_COLORS: Record<AssetClass, string> = {
@@ -95,7 +96,7 @@ export class ExportService {
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    this.download(blob, `zenith-${this.today()}.xlsx`);
+    await this.download(blob, `zenith-${this.today()}.xlsx`);
   }
 
   /** Rende un SheetData in un foglio: intestazione, righe, formati €/%/data, larghezze, freeze. */
@@ -153,8 +154,22 @@ export class ExportService {
     }
   }
 
-  /** Download lato browser (web/PWA). Su desktop Tauri il "salva con nome" arriva in Fase 4. */
-  private download(blob: Blob, filename: string): void {
+  /**
+   * Salva il file. Su **desktop Tauri**: finestra "Salva con nome" (dialog) + scrittura (fs).
+   * Altrimenti (web/PWA): download del browser via Blob.
+   */
+  private async download(blob: Blob, filename: string): Promise<void> {
+    if (isTauri()) {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const path = await save({
+        defaultPath: filename,
+        filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+      });
+      if (!path) return; // annullato dall'utente
+      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+      return;
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
