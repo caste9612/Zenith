@@ -139,7 +139,20 @@ const OWNER_COLORS: Record<Owner, string> = {
         @if (snapshots().length >= 2) {
           <h2 class="section-title">Composizione nel tempo</h2>
           <div class="card">
-            <span class="label">Per classe di asset</span>
+            <div class="row row-between chart-head">
+              <span class="label">Per classe di asset</span>
+              <div class="segmented">
+                @for (f of ownerFilters; track f.value) {
+                  <button
+                    type="button"
+                    [class.active]="classOwner() === f.value"
+                    (click)="classOwner.set(f.value)"
+                  >
+                    {{ f.label }}
+                  </button>
+                }
+              </div>
+            </div>
             @defer (on viewport) {
               <app-stacked-area-chart
                 [labels]="classStacks().labels"
@@ -270,6 +283,30 @@ const OWNER_COLORS: Record<Owner, string> = {
       .chart-ph {
         height: 200px;
       }
+      .chart-head {
+        margin-bottom: var(--space-2);
+      }
+      .segmented {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+      }
+      .segmented button {
+        padding: 3px 10px;
+        font-size: var(--fs-small);
+        background: transparent;
+        color: var(--text-secondary);
+        border: none;
+        border-left: 1px solid var(--border);
+      }
+      .segmented button:first-child {
+        border-left: none;
+      }
+      .segmented button.active {
+        background: var(--accent);
+        color: var(--on-accent);
+      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -339,9 +376,22 @@ export class DashboardPage {
       .sort((x, y) => y.value - x.value);
   });
 
+  /** Filtro intestatario per la composizione per classe (Tutti / Antonio / Michela / Condiviso). */
+  protected readonly classOwner = signal<'all' | Owner>('all');
+  protected readonly ownerFilters: { value: 'all' | Owner; label: string }[] = [
+    { value: 'all', label: 'Tutti' },
+    { value: 'antonio', label: 'Antonio' },
+    { value: 'michela', label: 'Michela' },
+    { value: 'shared', label: 'Condiviso' },
+  ];
+  private readonly classAccounts = computed(() => {
+    const o = this.classOwner();
+    return o === 'all' ? this.accounts() : this.accounts().filter((a) => a.owner === o);
+  });
+
   /** Composizione del patrimonio per classe di asset nel tempo (ordine: classe più grande in basso). */
   protected readonly classStacks = computed<{ labels: Date[]; series: StackSeries[] }>(() => {
-    const { labels, byKey } = assetClassSeries(this.accounts(), this.snapshots());
+    const { labels, byKey } = assetClassSeries(this.classAccounts(), this.snapshots());
     const series = [...byKey.entries()]
       .sort((a, b) => (b[1].at(-1) ?? 0) - (a[1].at(-1) ?? 0))
       .map(([cls, values]) => ({
