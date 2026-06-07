@@ -42,7 +42,7 @@
 7. **Deploy web** (manuale): `npm run deploy:hosting`. **App Windows**: push di un tag `v*` →
    GitHub Action builda e pubblica l'installer nei Releases.
 
-## Stato produzione — WEB ALLINEATA ✅ · Windows v0.5.0 (auto-updater ATTIVO)
+## Stato produzione — WEB ALLINEATA ✅ · Windows v0.6.0 (auto-updater ATTIVO)
 
 > **Sessione corrente (riepilogo):** dati **Cash flow** (58 mesi) + **operazioni chiuse** (102)
 > importati su Firestore (creds in `.env` locale, email `antonio.castellucci4@gmail.com`). **Registro
@@ -58,6 +58,16 @@
 > fuori dal repo). Release **v0.5.0** (tag) → desktop si auto-aggiorna.
 > *(NB: il dev server `ng serve` dopo un `npm i` estraneo può dare 504 "Outdated Optimize Dep" →
 > riavviarlo dopo aver pulito `.angular/cache`.)*
+
+> **Export Excel (sessione successiva):** **Impostazioni → Esporta** genera un `.xlsx` **lato client**
+> (**ExcelJS** in import dinamico) con 7 fogli — Riepilogo · Patrimonio · Portafoglio · Movimenti ·
+> Operazioni chiuse · Track record · Cash flow — più un foglio **Grafici** (PNG renderizzati su canvas:
+> patrimonio, ripartizione, tasso). Su **web** download del browser; su **desktop** salvataggio nativo
+> (plugin Tauri **dialog + fs**). Lo shaping dati→fogli è puro e **testato** (`core/export/sheets`);
+> reso + I/O verificati **end-to-end con Playwright** (login → Esporta → ri-letto l'xlsx: 8 fogli,
+> netto 149.227 € allineato alla dashboard, 3 immagini). **116 test verdi.** Release **v0.6.0** (tag).
+> Scopo: **backup** e **futura sostituzione dell'Excel** (grafici scelti come **immagini**, non nativi;
+> niente round-trip di re-import — vedi memoria `excel-zenith-reconciliation`).
 
 - Sito: **https://zenith-5768d.web.app** — **allineato a `main`** (deploy fatto): UI rivista (logo
   vero, spaziatura coerente, **assi X/Y su tutti i grafici**), dashboard storica + Indicatori +
@@ -256,6 +266,7 @@ Aperti / opzionali:
 - `src/app/core/portfolio/realized.ts` — operazioni chiuse → raggruppo per anno (**testato**); collezione `realizedTrades` (read-only).
 - `src/app/features/cashflow/cashflow.ts|cashflow-editor.ts` — pagina **Cash flow** + **editor "Nuovo mese"**; logica in `core/cashflow/cashflow.ts` (`savingRate`/`annualSummary`/`netRate`, **testata**); collezione `cashFlow`.
 - `src/app/features/settings/access-log.ts` — **registro accessi** (`describeDevice`, **testato**); collezione `accessLog`, scritta al login (`AccessLogRepository`).
+- `src/app/core/export/*` — **export Excel**: `sheets.ts` (dati→fogli, puro **testato**), `charts.ts` (grafici→PNG su canvas), `export.service.ts` (**ExcelJS** lazy + download web / salvataggio desktop via plugin Tauri **dialog+fs**). Bottone in Impostazioni; dipende da `exceljs` (in `allowedCommonJsDependencies`).
 - `scripts/validate/oracle.mjs` · `verify.mjs` — **oracolo** (`validate:oracle`, legge `data/seed.json`) e **verifica indipendente** end-to-end (`verify`, ri-parsa l'Excel). Entrambi locali.
 - `src/app/core/portfolio/metrics.ts` — indicatori titoli + `valueReturns`/`seriesMetrics` per il **patrimonio netto** (**testati**).
 - `.github/workflows/` — `test.yml` (CI test) · `release-windows.yml` (build+release Tauri).

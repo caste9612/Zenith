@@ -1,6 +1,6 @@
 # 08 — Strategia di test e validazione
 
-> Stato: **in corso — 108 test verdi**. Questo documento definisce *cosa* e *come* testare.
+> Stato: **in corso — 116 test verdi**. Questo documento definisce *cosa* e *come* testare.
 > Regola: **ogni nuova funzione di calcolo arriva con i suoi test**.
 
 ## Obiettivo
@@ -98,6 +98,13 @@ vincolo di progetto «dati finanziari fuori da git».
 
 ### Benchmark (S&P / NASDAQ)
 - [ ] flusso netto investito (acquisti − vendite) applicato all'indice → unità simulate, valore, confronto col portafoglio.
+
+### `core/export/sheets.ts` — `sheets.spec.ts`
+- [x] `patrimonioSheet` — intestazioni (Mese + voci ordinate per intestatario + subtotali + netto), valori con segno per le passività, celle vuote dove manca il valore, **disambiguazione** dei nomi duplicati con l'intestatario.
+- [x] `portfolioSheet` — valorizzazione (lastPrice→manuale→PMC), P&L, peso, ordine per valore, riga Totale; nessuna posizione → solo intestazioni.
+- [x] `cashflowSheet` — tasso di risparmio e netto/lordo derivati (`null` se dati mancanti).
+- [x] `realizedSheet` — vendite/dividendi, etichette e colonne €/%.
+- *(I renderer `charts.ts` e l'I/O di `export.service.ts` non sono unit-testati: verificati end-to-end con Playwright leggendo l'xlsx scaricato — 8 fogli, immagini, numeri allineati alla dashboard.)*
 
 ## Suite di validazione locale (oracolo = Excel) — ✅ implementata
 `scripts/validate/oracle.mjs` (`npm run validate:oracle`) legge `data/seed.json` (gitignorato) e verifica:

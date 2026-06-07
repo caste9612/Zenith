@@ -14,11 +14,16 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
   **ripartizione** (torta Classe/Voce/Intestatario) e **composizione nel tempo** unificate con toggle;
   **registro accessi** in Impostazioni; storico del patrimonio (composizione/drill); **fix layout
   mobile** (bottom-nav). App desktop **v0.5.0** (auto-updater attivo).
-- **Qualità — Test:** ✅ **in corso** — runner headless + CI attivi (`npm run test:ci`, workflow `test.yml`); **108 test verdi** su metrics (+ indicatori del **patrimonio netto**), format (incl. `formatEur`), **portfolio.service** (PMC/P&L), **quote.service** (staleness/FX/failed/**rate-limit con timer finti**), **fx.provider**, **yahoo.provider** (parsing + gating Tauri), **catena multi-provider/fallback** + `symbolForProvider`, **ricerca titoli** (`symbol-search`), **patrimonio netto** (`core/balance/net-worth`, incl. **serie storiche**) e **test di componente** (AllocationPie, ValueChart, **StackedArea**, **BarChart**), **cash flow** (`savingRate`/`annualSummary` incl. **`netRate`** netto/lordo), **`netWorthGrowthSeries`** (crescita %/€ del patrimonio) e **registro accessi** (`describeDevice`). In più la **validazione oracolo** locale (`npm run validate:oracle`) e la **verifica indipendente** end-to-end (`npm run verify`) contro l'Excel. *Mancano:* altri test dei componenti (grafico multi-linea, dashboard, editor snapshot/cash flow). Piano in `docs/08-testing.md`.
+- **Export Excel:** ✅ — **Impostazioni → Esporta** genera un `.xlsx` (lato client, **ExcelJS** lazy)
+  con 7 fogli (Riepilogo, Patrimonio, Portafoglio, Movimenti, Operazioni chiuse, Track record, Cash
+  flow) + foglio **Grafici** (immagini PNG da canvas); su **desktop** salvataggio nativo (plugin
+  Tauri dialog/fs). Backup + futura sostituzione dell'Excel. App **v0.6.0**.
+- **Qualità — Test:** ✅ **in corso** — runner headless + CI attivi (`npm run test:ci`, workflow `test.yml`); **116 test verdi** su metrics (+ indicatori del **patrimonio netto**), format (incl. `formatEur`), **portfolio.service** (PMC/P&L), **quote.service** (staleness/FX/failed/**rate-limit con timer finti**), **fx.provider**, **yahoo.provider** (parsing + gating Tauri), **catena multi-provider/fallback** + `symbolForProvider`, **ricerca titoli** (`symbol-search`), **patrimonio netto** (`core/balance/net-worth`, incl. **serie storiche**) e **test di componente** (AllocationPie, ValueChart, **StackedArea**, **BarChart**), **cash flow** (`savingRate`/`annualSummary` incl. **`netRate`** netto/lordo), **`netWorthGrowthSeries`** (crescita %/€ del patrimonio) e **registro accessi** (`describeDevice`), **export** (`core/export/sheets`: patrimonio/portafoglio/cash flow/realized). In più la **validazione oracolo** locale (`npm run validate:oracle`) e la **verifica indipendente** end-to-end (`npm run verify`) contro l'Excel. *Mancano:* altri test dei componenti (grafico multi-linea, dashboard, editor snapshot/cash flow). Piano in `docs/08-testing.md`.
 
 > **Fuori ambito (scelta del committente):** depositi/prelievi **sui conti** (il saldo mensile nello
-> snapshot basta), **report/export**, **dettaglio del fondo crypto** (la voce "Crypto" resta nel
-> patrimonio, ma senza drill-down dedicato).
+> snapshot basta), **report analitici**, **dettaglio del fondo crypto** (la voce "Crypto" resta nel
+> patrimonio, ma senza drill-down dedicato). *(L'**export Excel** — backup/sostituzione dell'Excel —
+> è invece **implementato**, vedi sopra.)*
 > *(Eccezione: il **Cash flow** — entrate/uscite/risparmio di **Antonio** — è ora **in ambito**, sia
 > dall'import sia con inserimento manuale dall'editor. È un flusso di reddito, distinto dai
 > depositi/prelievi conto per conto.)*
@@ -50,7 +55,7 @@ Si procede **per fasi**, con confronto col committente tra una e l'altra. *(Su r
 - Supporto **BTP/bond** con override manuale del prezzo. ✅
 - Multivaluta avanzata e gestione cambi. ✅
 - **Asset allocation** ✅ e **indicatori** (CAGR, volatilità, Sharpe, max drawdown). ✅
-- ~~Report ed export.~~ *(fuori ambito)*
+- **Export Excel** ✅ (Impostazioni → Esporta: 7 fogli + grafici, salvataggio desktop). ~~Report analitici~~ *(fuori ambito)*
 - **Stop-gate.**
 
 ## Qualità — Test
