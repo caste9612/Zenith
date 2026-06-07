@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { formatEur, formatPercentPlain } from '../core/money/format';
+import { formatCompactEur, formatEur, formatPercentPlain } from '../core/money/format';
 
 const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeric' });
+const axisDateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: '2-digit' });
 
 /**
- * Mini grafico a BARRE (SVG, zero dipendenze) per una serie mensile in **frazione** (0,2 = 20%),
- * es. il tasso di risparmio. Baseline allo zero (gestisce anche valori negativi). Al passaggio di
- * mouse/dito mostra mese e percentuale del mese attivo.
+ * Grafico a BARRE (SVG, zero dipendenze) con assi leggibili: valore sull'asse Y (€ o %), mesi
+ * sull'asse X, griglia + linea dello zero (gestisce valori negativi). Le etichette degli assi sono
+ * HTML attorno al plot. Al passaggio mostra mese e valore. Usato per risparmio €/mese e tasso %.
  */
 @Component({
   selector: 'app-bar-chart',
@@ -18,28 +19,43 @@ const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeri
           activeValue() === null ? '—' : fmt(activeValue()!)
         }}</span>
       </div>
-      <svg
-        class="svg"
-        [attr.viewBox]="'0 0 ' + W + ' ' + H"
-        preserveAspectRatio="none"
-        (mousemove)="onMouse($event)"
-        (mouseleave)="hover.set(null)"
-        (touchstart)="onTouch($event)"
-        (touchmove)="onTouch($event)"
-      >
-        <line x1="0" [attr.x2]="W" [attr.y1]="zeroY()" [attr.y2]="zeroY()" class="zero" />
-        @for (b of bars(); track b.i) {
-          <rect
-            [attr.x]="b.x"
-            [attr.y]="b.y"
-            [attr.width]="b.w"
-            [attr.height]="b.h"
-            class="bar"
-            [class.neg]="b.neg"
-            [class.active]="b.i === activeIndex()"
-          />
-        }
-      </svg>
+      <div class="frame">
+        <div class="y-axis">
+          @for (t of yTicks(); track t.y) {
+            <span>{{ t.label }}</span>
+          }
+        </div>
+        <svg
+          class="svg"
+          [attr.viewBox]="'0 0 ' + W + ' ' + H"
+          preserveAspectRatio="none"
+          (mousemove)="onMouse($event)"
+          (mouseleave)="hover.set(null)"
+          (touchstart)="onTouch($event)"
+          (touchmove)="onTouch($event)"
+        >
+          @for (t of yTicks(); track t.y) {
+            <line x1="0" [attr.x2]="W" [attr.y1]="t.y" [attr.y2]="t.y" class="grid" />
+          }
+          <line x1="0" [attr.x2]="W" [attr.y1]="zeroY()" [attr.y2]="zeroY()" class="zero" />
+          @for (b of bars(); track b.i) {
+            <rect
+              [attr.x]="b.x"
+              [attr.y]="b.y"
+              [attr.width]="b.w"
+              [attr.height]="b.h"
+              class="bar"
+              [class.neg]="b.neg"
+              [class.active]="b.i === activeIndex()"
+            />
+          }
+        </svg>
+        <div class="x-axis">
+          @for (t of xTicks(); track t.i) {
+            <span>{{ t.label }}</span>
+          }
+        </div>
+      </div>
     } @else {
       <p class="muted">Nessun dato.</p>
     }
@@ -65,12 +81,47 @@ const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeri
         font-size: 1.1rem;
         font-weight: var(--fw-bold);
       }
+      .frame {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-rows: 1fr auto;
+        column-gap: var(--space-2);
+      }
+      .y-axis {
+        grid-column: 1;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-align: right;
+        padding: 5px 0;
+        font-size: var(--fs-small);
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+      }
       .svg {
+        grid-column: 2;
+        grid-row: 1;
         width: 100%;
         height: 160px;
         overflow: visible;
         touch-action: none;
         cursor: crosshair;
+      }
+      .x-axis {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        justify-content: space-between;
+        margin-top: var(--space-1);
+        font-size: var(--fs-small);
+        color: var(--text-muted);
+        text-transform: capitalize;
+      }
+      .grid {
+        stroke: var(--border);
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
       }
       .zero {
         stroke: var(--border-strong);
@@ -82,7 +133,7 @@ const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeri
         opacity: 0.55;
       }
       .bar.neg {
-        fill: var(--loss, #e03131);
+        fill: var(--negative, #e03131);
       }
       .bar.active {
         opacity: 1;
@@ -110,7 +161,7 @@ export class BarChartComponent {
     const vals = this.values().filter((v): v is number => v !== null && Number.isFinite(v));
     const min = Math.min(0, ...vals);
     const max = Math.max(0, ...vals);
-    return { min, range: max - min || 1 };
+    return { min, max, range: max - min || 1 };
   });
 
   private readonly pad = 6;
@@ -145,9 +196,36 @@ export class BarChartComponent {
     return out;
   });
 
+  /** Tacche dell'asse Y (da max in alto a min in basso), formattate secondo `format`. */
+  protected readonly yTicks = computed(() => {
+    if (!this.hasData()) return [] as { y: number; label: string }[];
+    const { min, max } = this.domain();
+    const N = 4;
+    return Array.from({ length: N }, (_, i) => {
+      const v = max - ((max - min) * i) / (N - 1);
+      return { y: this.yAt(v), label: this.axisLabel(v) };
+    });
+  });
+
+  /** Tacche dell'asse X (date), da sinistra a destra. */
+  protected readonly xTicks = computed(() => {
+    const labels = this.labels();
+    const n = labels.length;
+    if (n < 2) return [] as { i: number; label: string }[];
+    const N = Math.min(5, n);
+    const seen = new Set<number>();
+    const out: { i: number; label: string }[] = [];
+    for (let k = 0; k < N; k++) {
+      const i = Math.round((k * (n - 1)) / (N - 1));
+      if (seen.has(i)) continue;
+      seen.add(i);
+      out.push({ i, label: axisDateFmt.format(labels[i]) });
+    }
+    return out;
+  });
+
   protected readonly activeIndex = computed(() => {
     if (this.hover() !== null) return this.hover()!;
-    // default: ultimo mese con un valore
     const vals = this.values();
     for (let i = vals.length - 1; i >= 0; i--)
       if (vals[i] !== null && Number.isFinite(vals[i]!)) return i;
@@ -176,5 +254,9 @@ export class BarChartComponent {
 
   protected fmt(v: number): string {
     return this.format() === 'eur' ? formatEur(v) : formatPercentPlain(v);
+  }
+  /** Etichetta dell'asse Y: € compatto o percentuale. */
+  private axisLabel(v: number): string {
+    return this.format() === 'eur' ? formatCompactEur(v) : formatPercentPlain(v);
   }
 }
