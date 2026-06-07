@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { formatPercentPlain } from '../core/money/format';
+import { formatEur, formatPercentPlain } from '../core/money/format';
 
 const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeric' });
 
@@ -15,7 +15,7 @@ const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeri
       <div class="readout">
         <span class="muted date">{{ activeDate() }}</span>
         <span class="num val" [class.gain]="activeValue()! > 0" [class.loss]="activeValue()! < 0">{{
-          activeValue() === null ? '—' : pct(activeValue()!)
+          activeValue() === null ? '—' : fmt(activeValue()!)
         }}</span>
       </div>
       <svg
@@ -41,7 +41,7 @@ const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeri
         }
       </svg>
     } @else {
-      <p class="muted">Nessun dato sul tasso di risparmio.</p>
+      <p class="muted">Nessun dato.</p>
     }
   `,
   styles: [
@@ -93,8 +93,10 @@ const dateFmt = new Intl.DateTimeFormat('it-IT', { month: 'short', year: 'numeri
 })
 export class BarChartComponent {
   readonly labels = input<Date[]>([]);
-  /** Valori in frazione (0,2 = 20%); `null` = barra assente. */
+  /** Valori; `null` = barra assente. In `percent` sono frazioni (0,2 = 20%); in `eur` sono importi. */
   readonly values = input<(number | null)[]>([]);
+  /** Formato del valore mostrato: percentuale (default) o euro. */
+  readonly format = input<'percent' | 'eur'>('percent');
 
   protected readonly W = 600;
   protected readonly H = 160;
@@ -172,7 +174,7 @@ export class BarChartComponent {
     this.hover.set(Math.max(0, Math.min(n - 1, i)));
   }
 
-  protected pct(v: number): string {
-    return formatPercentPlain(v);
+  protected fmt(v: number): string {
+    return this.format() === 'eur' ? formatEur(v) : formatPercentPlain(v);
   }
 }

@@ -91,5 +91,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/accounts/account-edit').then((m) => m.AccountEditPage),
   },
+  {
+    path: 'cashflow',
+    title: 'Cash flow · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/cashflow/cashflow').then((m) => m.CashFlowPage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];
