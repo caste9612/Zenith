@@ -8,7 +8,11 @@
 > **catena quotazioni multi-provider con fallback + ricerca titoli multi-provider**, **storico del
 > patrimonio in dashboard (composizione/drill/risparmio)**, **revisione UI (logo vero, spaziatura,
 > assi X/Y su tutti i grafici, split intestatario) + pagina Cash flow (Piano D) + verifica
-> indipendente (`npm run verify`) + auto-updater armato (v0.3.0)**.
+> indipendente (`npm run verify`) + auto-updater armato (v0.3.0)**, **dati Cash flow +
+> operazioni chiuse importati, registro accessi in Impostazioni, tasso di risparmio basato sul
+> patrimonio (%/€, per intestatario, filtro anno) in dashboard, editor Cash flow (nuovo mese
+> lordo/netto), ripartizione e composizione unificate con toggle, tassazione per anno, fix
+> bottom-nav mobile, Risparmi Michela → Liquidità → release v0.5.0**.
 
 ## Dove si lavora (branch)
 
@@ -38,7 +42,22 @@
 7. **Deploy web** (manuale): `npm run deploy:hosting`. **App Windows**: push di un tag `v*` →
    GitHub Action builda e pubblica l'installer nei Releases.
 
-## Stato produzione — WEB ALLINEATA ✅ · Windows v0.3.0 (auto-updater ATTIVO)
+## Stato produzione — WEB ALLINEATA ✅ · Windows v0.5.0 (auto-updater ATTIVO)
+
+> **Sessione corrente (riepilogo):** dati **Cash flow** (58 mesi) + **operazioni chiuse** (102)
+> importati su Firestore (creds in `.env` locale, email `antonio.castellucci4@gmail.com`). **Registro
+> accessi** (login con data/dispositivo) in Impostazioni. **Tasso di risparmio** spostato in dashboard
+> e ribasato sul **patrimonio** (crescita NW mese su mese), in **%/€** con filtro **anno** e toggle
+> **Nucleo/Antonio/Michela** (funzione pura `netWorthGrowthSeries`, testata). **Editor Cash flow**
+> (`/cashflow/new`): nuovo mese lordo/netto/uscite → tassazione e risparmio calcolati (cash flow =
+> **solo Antonio**, per ora). **Ripartizione** dashboard unificata (torta unica, toggle
+> Classe/Voce/Intestatario, € in legenda) e **Composizione nel tempo** unificata (toggle
+> classe/intestatario). **Tassazione per anno** nel Cash flow (netto % del lordo). **Fix mobile**:
+> bottom-nav a 4 colonne. **Risparmi Michela** riclassificata `cash` (Liquidità), via "Altro".
+> **108 test verdi.** Verifiche fatte con **screenshot mobile** (Playwright, in `C:\Users\wcast\pw-tool`,
+> fuori dal repo). Release **v0.5.0** (tag) → desktop si auto-aggiorna.
+> *(NB: il dev server `ng serve` dopo un `npm i` estraneo può dare 504 "Outdated Optimize Dep" →
+> riavviarlo dopo aver pulito `.angular/cache`.)*
 
 - Sito: **https://zenith-5768d.web.app** — **allineato a `main`** (deploy fatto): UI rivista (logo
   vero, spaziatura coerente, **assi X/Y su tutti i grafici**), dashboard storica + Indicatori +
