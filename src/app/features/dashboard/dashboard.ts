@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AccountsRepository, SnapshotsRepository } from '../../core/data';
 import {
+  formatCompactEur,
   formatEur,
   formatPercent,
   formatPercentPlain,
@@ -109,33 +110,23 @@ const OWNER_COLORS: Record<Owner, string> = {
           </div>
         }
 
-        <h2 class="section-title">Ripartizione per classe</h2>
+        <h2 class="section-title">Ripartizione</h2>
         <div class="card">
-          <app-allocation-pie [items]="byClass()" />
-        </div>
-
-        <h2 class="section-title">Per intestatario</h2>
-        <div class="grid owners">
-          @for (o of ownerTotals(); track o.owner) {
-            <div class="card mini">
-              <span class="label">{{ o.label }}</span>
-              <span class="num value">{{ eur(o.total) }}</span>
+          <div class="row row-between chart-head">
+            <span class="label">Composizione del patrimonio</span>
+            <div class="segmented">
+              @for (f of allocFilters; track f.value) {
+                <button
+                  type="button"
+                  [class.active]="allocDim() === f.value"
+                  (click)="allocDim.set(f.value)"
+                >
+                  {{ f.label }}
+                </button>
+              }
             </div>
-          }
-        </div>
-
-        <h2 class="section-title">Ripartizione per voce</h2>
-        <div class="stack-sm">
-          @for (b of breakdown(); track b.id) {
-            <div class="card voce">
-              <span class="dot" [attr.data-owner]="b.owner"></span>
-              <div class="voce-name">
-                <div>{{ b.name }}</div>
-                <div class="muted small">{{ ownerLabel(b.owner) }} · {{ b.pct }}%</div>
-              </div>
-              <span class="num value">{{ eur(b.value) }}</span>
-            </div>
-          }
+          </div>
+          <app-allocation-pie [items]="allocItems()" [valueFormat]="compactEur" />
         </div>
 
         @if (snapshots().length >= 2) {
@@ -412,6 +403,40 @@ export class DashboardPage {
       .map(([cls, value]) => ({ label: ASSET_CLASS_LABELS[cls], value }))
       .sort((x, y) => y.value - x.value);
   });
+
+  /** Ripartizione per intestatario (solo netti positivi), per la torta unificata. */
+  protected readonly byOwner = computed<PieItem[]>(() => {
+    const l = this.latest();
+    if (!l) return [];
+    return [...totalsByOwner(this.accounts(), l.values).entries()]
+      .map(([o, value]) => ({ label: OWNER_LABELS[o], value }))
+      .filter((i) => i.value > 0)
+      .sort((a, b) => b.value - a.value);
+  });
+
+  /** Ripartizione per singola voce (solo valori positivi), per la torta unificata. */
+  protected readonly byAccount = computed<PieItem[]>(() => {
+    const l = this.latest();
+    if (!l) return [];
+    return this.accounts()
+      .map((a) => ({ label: a.name, value: l.values[a.id ?? ''] ?? 0 }))
+      .filter((i) => i.value > 0)
+      .sort((a, b) => b.value - a.value);
+  });
+
+  /** Ripartizione UNIFICATA: una sola torta con dimensione classe / voce / intestatario. */
+  protected readonly allocDim = signal<'class' | 'account' | 'owner'>('class');
+  protected readonly allocFilters: { value: 'class' | 'account' | 'owner'; label: string }[] = [
+    { value: 'class', label: 'Classe' },
+    { value: 'account', label: 'Voce' },
+    { value: 'owner', label: 'Intestatario' },
+  ];
+  protected readonly allocItems = computed<PieItem[]>(() => {
+    const d = this.allocDim();
+    return d === 'owner' ? this.byOwner() : d === 'account' ? this.byAccount() : this.byClass();
+  });
+  /** Formatter € compatto per la legenda della torta. */
+  protected readonly compactEur = formatCompactEur;
 
   /** Filtro intestatario per la composizione per classe (Tutti / Antonio / Michela / Condiviso). */
   protected readonly classOwner = signal<'all' | Owner>('all');

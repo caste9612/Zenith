@@ -42,7 +42,10 @@ function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): str
             <li>
               <span class="dot" [style.background]="s.color"></span>
               <span class="lsym">{{ s.label }}</span>
-              <span class="muted">{{ s.pct }}%</span>
+              @if (valueFormat(); as f) {
+                <span class="lval num">{{ f(s.value) }}</span>
+              }
+              <span class="muted pct">{{ s.pct }}%</span>
             </li>
           }
         </ul>
@@ -68,7 +71,7 @@ function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): str
       .legend {
         list-style: none;
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: var(--space-1) var(--space-3);
         flex: 1;
         min-width: 150px;
@@ -81,6 +84,18 @@ function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): str
       }
       .legend .lsym {
         font-weight: var(--fw-medium);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .legend .lval {
+        font-variant-numeric: tabular-nums;
+      }
+      .legend .pct {
+        min-width: 34px;
+        text-align: right;
       }
       .dot {
         width: 10px;
@@ -94,6 +109,8 @@ function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): str
 })
 export class AllocationPieComponent {
   readonly items = input<PieItem[]>([]);
+  /** Se fornito, mostra in legenda il valore formattato (es. € compatto) accanto alla %. */
+  readonly valueFormat = input<((v: number) => string) | null>(null);
 
   protected readonly slices = computed(() => {
     const items = this.items().filter((i) => i.value > 0);
@@ -109,6 +126,7 @@ export class AllocationPieComponent {
         label: it.label,
         color: PALETTE[i % PALETTE.length],
         pct: Math.round(f * 100),
+        value: it.value,
         d: arcPath(60, 60, 56, a0, a1),
       };
     });

@@ -43,5 +43,13 @@ describe('cashflow', () => {
     expect(s[0].saved).toBe(800); // 500 + 300
     expect(s[0].rate).toBeCloseTo(0.4, 10); // 800/2000
     expect(s[1].saved).toBe(400);
+    // tassazione: netto / lordo cumulato sull'anno
+    expect(s[0].netRate).toBeCloseTo(2000 / 2600, 10); // 2024: lordo 2×1300
+    expect(s[1].netRate).toBeCloseTo(1000 / 1300, 10); // 2023
+  });
+
+  it('annualSummary: netRate null se lordo assente', () => {
+    const s = annualSummary([m(new Date(2024, 0, 31), 1000, 500)]); // gross null → 0
+    expect(s[0].netRate).toBeNull();
   });
 });

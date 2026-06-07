@@ -27,6 +27,8 @@ export interface CashFlowYear {
   saved: number;
   /** Tasso di risparmio annuo (saved/income); `null` se income ≤ 0. */
   rate: number | null;
+  /** Netto come frazione residua del lordo cumulato sull'anno (income/gross); `null` se lordo ≤ 0. */
+  netRate: number | null;
 }
 
 /** Riepilogo per anno (somme dei mesi) + tasso di risparmio annuo, dal più recente. */
@@ -42,6 +44,7 @@ export function annualSummary(months: readonly CashFlowMonth[]): CashFlowYear[] 
       tax: 0,
       saved: 0,
       rate: null,
+      netRate: null,
     };
     cur.gross += m.gross ?? 0;
     cur.income += m.income ?? 0;
@@ -51,6 +54,10 @@ export function annualSummary(months: readonly CashFlowMonth[]): CashFlowYear[] 
     byYear.set(y, cur);
   }
   return [...byYear.values()]
-    .map((y) => ({ ...y, rate: y.income > 0 ? y.saved / y.income : null }))
+    .map((y) => ({
+      ...y,
+      rate: y.income > 0 ? y.saved / y.income : null,
+      netRate: y.gross > 0 ? y.income / y.gross : null,
+    }))
     .sort((a, b) => b.year - a.year);
 }

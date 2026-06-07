@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CashFlowRepository } from '../../core/data';
 import { annualSummary, cumulativeSaved } from '../../core/cashflow/cashflow';
-import { formatEur, formatSignedEur } from '../../core/money/format';
+import { formatEur, formatPercentPlain, formatSignedEur } from '../../core/money/format';
 import { BarChartComponent } from '../../shared/bar-chart';
 import { LineSeries, MultiLineChartComponent } from '../../shared/multi-line-chart';
 import { ChartPoint, ValueChartComponent } from '../../shared/value-chart';
@@ -69,18 +69,21 @@ const COLORS = { income: '#1f9d57', expenses: '#e8590c' };
           }
         </div>
 
-        <h2 class="section-title">Per anno</h2>
+        <h2 class="section-title">Tassazione per anno</h2>
+        <p class="muted small sub">
+          Quanto del lordo resta netto (il resto sono tasse e contributi), cumulato sull'anno.
+        </p>
         <div class="stack-sm">
           @for (y of years(); track y.year) {
             <div class="card year">
               <span class="y-name num">{{ y.year }}</span>
-              <span class="muted small"
-                >netto {{ eur(y.income) }} · uscite {{ eur(y.expenses) }}</span
-              >
+              <span class="muted small">lordo {{ eur(y.gross) }} · netto {{ eur(y.income) }}</span>
               <span class="spacer"></span>
-              <span class="num value" [class.gain]="y.saved > 0" [class.loss]="y.saved < 0">{{
-                signed(y.saved)
-              }}</span>
+              @if (y.netRate !== null) {
+                <span class="num netpct"
+                  >{{ pctPlain(y.netRate) }} <span class="muted small">netto</span></span
+                >
+              }
             </div>
           }
         </div>
@@ -134,6 +137,13 @@ const COLORS = { income: '#1f9d57', expenses: '#e8590c' };
         min-width: 90px;
         text-align: right;
       }
+      .year .netpct {
+        font-weight: var(--fw-semibold);
+        white-space: nowrap;
+      }
+      .sub {
+        margin-top: calc(var(--space-2) * -1);
+      }
       .empty {
         padding: var(--space-6);
       }
@@ -181,5 +191,8 @@ export class CashFlowPage {
   }
   protected signed(v: number): string {
     return formatSignedEur(v);
+  }
+  protected pctPlain(v: number): string {
+    return formatPercentPlain(v);
   }
 }
