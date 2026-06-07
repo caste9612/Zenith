@@ -1,5 +1,14 @@
-import type { Account, AssetClass, Holding, Instrument, Owner, Snapshot } from '../models';
-import { patrimonioSheet, portfolioSheet } from './sheets';
+import type {
+  Account,
+  AssetClass,
+  CashFlowMonth,
+  Holding,
+  Instrument,
+  Owner,
+  RealizedTrade,
+  Snapshot,
+} from '../models';
+import { cashflowSheet, patrimonioSheet, portfolioSheet, realizedSheet } from './sheets';
 
 function acc(
   id: string,
@@ -95,5 +104,47 @@ describe('export/sheets · portfolioSheet', () => {
   it('nessuna posizione → solo intestazioni, niente riga Totale', () => {
     const { rows } = portfolioSheet([], instruments);
     expect(rows.length).toBe(0);
+  });
+});
+
+describe('export/sheets · altri fogli', () => {
+  it('patrimonioSheet: nomi duplicati disambiguati con intestatario', () => {
+    const accounts: Account[] = [
+      acc('ra', 'Riserva', 'antonio', 'reserve', 0),
+      acc('rm', 'Riserva', 'michela', 'reserve', 1),
+      acc('c', 'Cash', 'antonio', 'cash', 2),
+    ];
+    const { headers } = patrimonioSheet(accounts, []);
+    expect(headers).toContain('Riserva (Antonio)');
+    expect(headers).toContain('Riserva (Michela)');
+    expect(headers).toContain('Cash'); // unico → senza intestatario
+  });
+
+  it('cashflowSheet: tasso di risparmio e netto/lordo derivati', () => {
+    const months: CashFlowMonth[] = [
+      { id: '2025-01', date: new Date(2025, 0, 31), gross: 2000, income: 1500, expenses: 900, tax: 500, saved: 600 },
+      { id: '2025-02', date: new Date(2025, 1, 28), gross: null, income: null, expenses: null, tax: null, saved: null },
+    ];
+    const { rows, pctColumns } = cashflowSheet(months);
+    expect(pctColumns).toEqual([6, 7]);
+    expect(rows[0][6] as number).toBeCloseTo(600 / 1500, 10); // tasso di risparmio
+    expect(rows[0][7] as number).toBeCloseTo(1500 / 2000, 10); // netto/lordo
+    expect(rows[1][6]).toBeNull(); // dati mancanti → null
+    expect(rows[1][7]).toBeNull();
+  });
+
+  it('realizedSheet: vendite e dividendi, etichette e colonne', () => {
+    const trades: RealizedTrade[] = [
+      { id: '2024-07-1', date: new Date(2024, 6, 31), symbol: 'AAA', kind: 'sale', cost: 100, quantity: 5, proceeds: 130, pl: 30, plPct: 0.3 },
+      { id: '2024-08-1', date: new Date(2024, 7, 31), symbol: 'BBB', kind: 'dividend', cost: null, quantity: null, proceeds: 12, pl: 12, plPct: null },
+    ];
+    const { rows, eurColumns, pctColumns } = realizedSheet(trades);
+    expect(eurColumns).toEqual([4, 5, 6]);
+    expect(pctColumns).toEqual([7]);
+    expect(rows[0][2]).toBe('Vendita');
+    expect(rows[0][7] as number).toBeCloseTo(0.3, 10);
+    expect(rows[1][2]).toBe('Dividendo');
+    expect(rows[1][3]).toBeNull(); // dividendo: niente quantità
+    expect(rows[1][7]).toBeNull(); // dividendo: niente %
   });
 });

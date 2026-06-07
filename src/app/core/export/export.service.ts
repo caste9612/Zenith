@@ -1,11 +1,24 @@
 import { inject, Injectable } from '@angular/core';
 import {
   AccountsRepository,
+  CashFlowRepository,
   HoldingsRepository,
   InstrumentsRepository,
+  PortfolioHistoryRepository,
+  RealizedTradesRepository,
   SnapshotsRepository,
+  TransactionsRepository,
 } from '../data';
-import { patrimonioSheet, portfolioSheet, SheetData } from './sheets';
+import {
+  cashflowSheet,
+  movimentiSheet,
+  patrimonioSheet,
+  portfolioSheet,
+  realizedSheet,
+  riepilogoSheet,
+  trackRecordSheet,
+  SheetData,
+} from './sheets';
 
 /**
  * Export di tutti i dati dell'app in un `.xlsx` (backup + sostituzione dell'Excel). **Lato client**:
@@ -18,19 +31,37 @@ export class ExportService {
   private readonly snapshotsRepo = inject(SnapshotsRepository);
   private readonly holdingsRepo = inject(HoldingsRepository);
   private readonly instrumentsRepo = inject(InstrumentsRepository);
+  private readonly txRepo = inject(TransactionsRepository);
+  private readonly realizedRepo = inject(RealizedTradesRepository);
+  private readonly historyRepo = inject(PortfolioHistoryRepository);
+  private readonly cashflowRepo = inject(CashFlowRepository);
 
-  /** Genera e scarica il workbook. (Fase 1: fogli Patrimonio + Portafoglio, download web.) */
+  /** Genera e scarica il workbook con tutti i dati dell'app. */
   async exportWorkbook(): Promise<void> {
-    const [accounts, snapshots, holdings, instruments] = await Promise.all([
-      this.accountsRepo.listOrdered(),
-      this.snapshotsRepo.listByDate(),
-      this.holdingsRepo.list(),
-      this.instrumentsRepo.list(),
-    ]);
+    const [accounts, snapshots, holdings, instruments, transactions, realized, history, cashflow] =
+      await Promise.all([
+        this.accountsRepo.listOrdered(),
+        this.snapshotsRepo.listByDate(),
+        this.holdingsRepo.list(),
+        this.instrumentsRepo.list(),
+        this.txRepo.list(),
+        this.realizedRepo.list(),
+        this.historyRepo.list(),
+        this.cashflowRepo.list(),
+      ]);
+    const byDate = (a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime();
+    realized.sort(byDate);
+    history.sort(byDate);
+    cashflow.sort(byDate);
 
     const sheets: SheetData[] = [
+      riepilogoSheet(accounts, snapshots),
       patrimonioSheet(accounts, snapshots),
       portfolioSheet(holdings, instruments),
+      movimentiSheet(transactions, instruments),
+      realizedSheet(realized),
+      trackRecordSheet(history),
+      cashflowSheet(cashflow),
     ];
 
     // ExcelJS è pesante: caricato solo qui, on demand.
