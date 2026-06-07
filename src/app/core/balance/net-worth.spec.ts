@@ -110,12 +110,14 @@ describe('balance/net-worth · serie storiche', () => {
     expect(all.values[0]).toBeNull();
     expect(all.values[1]!).toBeCloseTo(40 / 350, 10);
     expect(all.values[2]!).toBeCloseTo(-90 / 390, 10);
+    expect(all.deltas).toEqual([null, 40, -90]); // variazione assoluta in €
 
     // Per intestatario (Antonio): 150 → 180 → 80
     const ant = netWorthGrowthSeries(accounts, snaps, 'antonio');
     expect(ant.values[0]).toBeNull();
     expect(ant.values[1]!).toBeCloseTo(0.2, 10);
     expect(ant.values[2]!).toBeCloseTo(-100 / 180, 10);
+    expect(ant.deltas).toEqual([null, 30, -100]);
   });
 
   it('netWorthGrowthSeries: null quando il patrimonio precedente è ≤ 0', () => {
@@ -125,9 +127,10 @@ describe('balance/net-worth · serie storiche', () => {
       { date: new Date(2024, 1, 29), values: { x: 100 } },
       { date: new Date(2024, 2, 31), values: { x: 150 } },
     ];
-    const { values } = netWorthGrowthSeries(a2, s2);
+    const { values, deltas } = netWorthGrowthSeries(a2, s2);
     expect(values[0]).toBeNull(); // primo mese
-    expect(values[1]).toBeNull(); // base 0 → null
+    expect(values[1]).toBeNull(); // base 0 → null (% non calcolabile)
     expect(values[2]!).toBeCloseTo(0.5, 10); // 100 → 150
+    expect(deltas).toEqual([null, 100, 50]); // l'assoluto in € resta calcolabile
   });
 });

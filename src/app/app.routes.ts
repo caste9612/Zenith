@@ -97,5 +97,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/cashflow/cashflow').then((m) => m.CashFlowPage),
   },
+  {
+    path: 'cashflow/new',
+    title: 'Nuovo mese · Zenith',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/cashflow/cashflow-editor').then((m) => m.CashFlowEditorPage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

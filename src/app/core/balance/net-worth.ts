@@ -125,24 +125,30 @@ export function savingRateSeries(snapshots: readonly BalanceSnapshot[]): {
 }
 
 /**
- * Tasso di risparmio "basato sul patrimonio": crescita % del patrimonio netto mese su mese →
- * `values[i] = (NW[i] − NW[i-1]) / NW[i-1]`. Un trasferimento tra conti non cambia il patrimonio,
- * quindi (a differenza del cash flow) NON appare come spesa. `null` dove non calcolabile (primo
- * mese, o patrimonio precedente ≤ 0). Con `owner` limita a un intestatario; senza, l'intero nucleo.
+ * Tasso di risparmio "basato sul patrimonio": crescita del patrimonio netto mese su mese, sia in
+ * **percentuale** (`values[i] = (NW[i]−NW[i-1])/NW[i-1]`) sia in **valore assoluto** in €
+ * (`deltas[i] = NW[i]−NW[i-1]`). Un trasferimento tra conti non cambia il patrimonio, quindi (a
+ * differenza del cash flow) NON appare come spesa. Primo mese → `null`; la % è `null` anche se il
+ * patrimonio precedente è ≤ 0. Con `owner` limita a un intestatario; senza, l'intero nucleo.
  */
 export function netWorthGrowthSeries(
   accounts: readonly BalanceAccount[],
   snapshots: readonly BalanceSnapshot[],
   owner?: Owner,
-): { labels: Date[]; values: (number | null)[] } {
+): { labels: Date[]; values: (number | null)[]; deltas: (number | null)[] } {
   const sel = owner ? accounts.filter((a) => a.owner === owner) : accounts;
   const nw = snapshots.map((s) => computeNetWorth(sel, s.values));
-  return {
-    labels: snapshots.map((s) => s.date),
-    values: nw.map((v, i) => {
-      if (i === 0) return null;
-      const prev = nw[i - 1];
-      return prev > 0 ? (v - prev) / prev : null;
-    }),
-  };
+  const values: (number | null)[] = [];
+  const deltas: (number | null)[] = [];
+  nw.forEach((v, i) => {
+    if (i === 0) {
+      values.push(null);
+      deltas.push(null);
+      return;
+    }
+    const prev = nw[i - 1];
+    deltas.push(Math.round((v - prev) * 100) / 100); // variazione in € (sempre calcolabile)
+    values.push(prev > 0 ? (v - prev) / prev : null); // crescita %
+  });
+  return { labels: snapshots.map((s) => s.date), values, deltas };
 }

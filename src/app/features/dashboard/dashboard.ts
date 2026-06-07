@@ -133,7 +133,6 @@ const OWNER_COLORS: Record<Owner, string> = {
           <h2 class="section-title">Tasso di risparmio</h2>
           <div class="card">
             <div class="row row-between chart-head">
-              <span class="label">Crescita del patrimonio, mese su mese</span>
               <div class="segmented">
                 @for (f of savingFilters; track f.value) {
                   <button
@@ -145,12 +144,36 @@ const OWNER_COLORS: Record<Owner, string> = {
                   </button>
                 }
               </div>
+              <div class="row controls">
+                <div class="segmented">
+                  <button
+                    type="button"
+                    [class.active]="savingMetric() === 'pct'"
+                    (click)="savingMetric.set('pct')"
+                  >
+                    %
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="savingMetric() === 'eur'"
+                    (click)="savingMetric.set('eur')"
+                  >
+                    €
+                  </button>
+                </div>
+                <select class="select" aria-label="Filtra per anno" (change)="setSavingYear($event)">
+                  <option value="all" [selected]="savingYear() === 'all'">Tutti gli anni</option>
+                  @for (y of savingYears(); track y) {
+                    <option [value]="y" [selected]="savingYear() === y">{{ y }}</option>
+                  }
+                </select>
+              </div>
             </div>
             @defer (on viewport) {
               <app-bar-chart
-                [labels]="savingRate().labels"
-                [values]="savingRate().values"
-                format="percent"
+                [labels]="savingSeries().labels"
+                [values]="savingSeries().values"
+                [format]="savingMetric() === 'eur' ? 'eur' : 'percent'"
               />
             } @placeholder {
               <div class="chart-ph"></div>
@@ -305,6 +328,13 @@ const OWNER_COLORS: Record<Owner, string> = {
         background: var(--surface-2);
         color: var(--text);
         font: inherit;
+      }
+      .controls {
+        gap: var(--space-2);
+        flex-wrap: wrap;
+      }
+      .controls .select {
+        margin-bottom: 0;
       }
       .chart-ph {
         height: 200px;
@@ -490,6 +520,28 @@ export class DashboardPage {
     return netWorthGrowthSeries(this.accounts(), this.snapshots(), o === 'all' ? undefined : o);
   });
 
+  /** Metrica del tasso: percentuale o valore assoluto in €. */
+  protected readonly savingMetric = signal<'pct' | 'eur'>('pct');
+  /** Filtro anno per il tasso (tutti gli anni o uno specifico). */
+  protected readonly savingYear = signal<number | 'all'>('all');
+  protected readonly savingYears = computed(() =>
+    [...new Set(this.snapshots().map((s) => s.date.getFullYear()))].sort((a, b) => b - a),
+  );
+  /** Serie del tasso, filtrata per anno e nella metrica scelta (% o € assoluto). */
+  protected readonly savingSeries = computed<{ labels: Date[]; values: (number | null)[] }>(() => {
+    const full = this.savingRate();
+    const eur = this.savingMetric() === 'eur';
+    const year = this.savingYear();
+    const labels: Date[] = [];
+    const values: (number | null)[] = [];
+    full.labels.forEach((d, i) => {
+      if (year !== 'all' && d.getFullYear() !== year) return;
+      labels.push(d);
+      values.push(eur ? full.deltas[i] : full.values[i]);
+    });
+    return { labels, values };
+  });
+
   /**
    * Composizione nel tempo UNIFICATA: un solo grafico ad area con toggle della dimensione
    * (per classe di asset / per intestatario), invece di due grafici quasi identici.
@@ -515,6 +567,11 @@ export class DashboardPage {
 
   protected selectAccount(e: Event): void {
     this.selectedAccountId.set((e.target as HTMLSelectElement).value);
+  }
+
+  protected setSavingYear(e: Event): void {
+    const v = (e.target as HTMLSelectElement).value;
+    this.savingYear.set(v === 'all' ? 'all' : Number(v));
   }
 
   protected monthLabel(): string {

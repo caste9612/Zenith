@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CashFlowRepository } from '../../core/data';
 import { annualSummary, cumulativeSaved } from '../../core/cashflow/cashflow';
 import { formatEur, formatPercentPlain, formatSignedEur } from '../../core/money/format';
@@ -15,12 +16,15 @@ const COLORS = { income: '#1f9d57', expenses: '#e8590c' };
  */
 @Component({
   selector: 'app-cashflow',
-  imports: [MultiLineChartComponent, BarChartComponent, ValueChartComponent],
+  imports: [MultiLineChartComponent, BarChartComponent, ValueChartComponent, RouterLink],
   template: `
     <section class="page">
       <header class="page-header">
-        <h1>Cash flow</h1>
-        <p class="subtitle">Entrate, uscite e risparmio del nucleo, mese per mese.</p>
+        <div class="row row-between head-row">
+          <h1>Cash flow</h1>
+          <a class="btn btn-primary" routerLink="/cashflow/new">Nuovo mese</a>
+        </div>
+        <p class="subtitle">Entrate, uscite e risparmio (Antonio), mese per mese.</p>
       </header>
 
       @if (months().length >= 2) {
@@ -90,8 +94,8 @@ const COLORS = { income: '#1f9d57', expenses: '#e8590c' };
       } @else {
         <div class="card empty">
           <p class="secondary">
-            Nessun dato di cash flow. Importa con <code>npm run import:cashflow</code> (richiede
-            <code>SEED_*</code> in <code>.env</code>).
+            Nessun dato di cash flow ancora. Usa <strong>Nuovo mese</strong> per inserirlo a mano,
+            oppure importa lo storico con <code>npm run import:cashflow</code>.
           </p>
         </div>
       }
