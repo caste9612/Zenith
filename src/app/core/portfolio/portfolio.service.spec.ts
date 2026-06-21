@@ -115,6 +115,39 @@ describe('PortfolioService · PMC e P&L (metodo del costo medio)', () => {
     expect(instruments.items[0].id).toBe('AAA');
   });
 
+  it('addBuy su strumento con id≠symbol: aggrega, non duplica (regressione ACOMO/ACOMO.AMS)', async () => {
+    // strumento importato: id "ACOMO" ma symbol "ACOMO.AMS", con posizione di apertura
+    await instruments.upsert({
+      id: 'ACOMO',
+      symbol: 'ACOMO.AMS',
+      name: 'ACOMO',
+      assetType: 'equity',
+      currency: 'EUR',
+      provider: 'alphavantage',
+    });
+    await txs.upsert({
+      id: 'open-ACOMO',
+      date: d(1),
+      type: 'buy',
+      accountId: 'azionario',
+      instrumentId: 'ACOMO',
+      quantity: 100,
+      amount: 2400,
+      currency: 'EUR',
+    });
+    await service.recompute('ACOMO');
+    expect(holdingFor('ACOMO')!.quantity).toBe(100);
+
+    // il portafoglio linka l'operazione col SYMBOL ("ACOMO.AMS")
+    await service.addBuy({ symbol: 'ACOMO.AMS', date: d(2), quantity: 100, amount: 2330 });
+
+    expect(instruments.items.length).toBe(1); // nessun duplicato
+    expect(holdingFor('ACOMO.AMS')).toBeUndefined();
+    const h = holdingFor('ACOMO')!;
+    expect(h.quantity).toBe(200); // aggregato
+    expect(h.avgCost).toBe(23.65); // (2400 + 2330) / 200
+  });
+
   it('caso limite: vendita superiore al posseduto si limita al disponibile (nessun errore)', async () => {
     await service.addBuy({ symbol: 'AAA', date: d(1), quantity: 10, amount: 1000 });
     await service.addSell({ symbol: 'AAA', date: d(2), quantity: 999, amount: 50000 });

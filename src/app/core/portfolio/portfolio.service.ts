@@ -60,8 +60,14 @@ export class PortfolioService {
   /** Trova (o crea) lo strumento; ritorna l'id (= simbolo maiuscolo). */
   async ensureInstrument(symbol: string, name?: string): Promise<string> {
     const sym = symbol.trim().toUpperCase();
-    const existing = (await this.instrumentsRepo.list()).find((i) => (i.id ?? i.symbol) === sym);
-    if (existing) return existing.id ?? sym;
+    const all = await this.instrumentsRepo.list();
+    // Match per id O symbol (case-insensitive): uno strumento può avere id≠symbol (es. id "ACOMO",
+    // symbol "ACOMO.AMS" dall'import). Cercando solo per id si creava un duplicato quando il
+    // portafoglio passa il symbol. Preferisci l'id esatto, poi il symbol.
+    const existing =
+      all.find((i) => (i.id ?? '').toUpperCase() === sym) ??
+      all.find((i) => (i.symbol ?? '').toUpperCase() === sym);
+    if (existing) return existing.id ?? existing.symbol ?? sym;
     await this.instrumentsRepo.upsert({
       id: sym,
       symbol: sym,
