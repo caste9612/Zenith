@@ -169,6 +169,17 @@ const OWNER_COLORS: Record<Owner, string> = {
                 </select>
               </div>
             </div>
+            <div class="saving-avg">
+              <span class="muted"
+                >Media mensile{{ savingYear() === 'all' ? ' (tutti gli anni)' : ' ' + savingYear() }}</span
+              >
+              <span
+                class="num avg"
+                [class.gain]="(savingAvg() ?? 0) > 0"
+                [class.loss]="(savingAvg() ?? 0) < 0"
+                >{{ savingAvgLabel() }}</span
+              >
+            </div>
             @defer (on viewport) {
               <app-bar-chart
                 [labels]="savingSeries().labels"
@@ -335,6 +346,17 @@ const OWNER_COLORS: Record<Owner, string> = {
       }
       .controls .select {
         margin-bottom: 0;
+      }
+      .saving-avg {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3);
+        margin-bottom: var(--space-3);
+      }
+      .saving-avg .avg {
+        font-size: 1.15rem;
+        font-weight: var(--fw-semibold);
       }
       .chart-ph {
         height: 200px;
@@ -541,6 +563,13 @@ export class DashboardPage {
     });
     return { labels, values };
   });
+  /** Media mensile della serie filtrata (anno × intestatario × metrica): il "tasso medio" richiesto. */
+  protected readonly savingAvg = computed<number | null>(() => {
+    const vals = this.savingSeries().values.filter(
+      (v): v is number => v !== null && Number.isFinite(v),
+    );
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  });
 
   /**
    * Composizione nel tempo UNIFICATA: un solo grafico ad area con toggle della dimensione
@@ -572,6 +601,13 @@ export class DashboardPage {
   protected setSavingYear(e: Event): void {
     const v = (e.target as HTMLSelectElement).value;
     this.savingYear.set(v === 'all' ? 'all' : Number(v));
+  }
+
+  /** Media mensile formattata nella metrica scelta (€ o %). */
+  protected savingAvgLabel(): string {
+    const a = this.savingAvg();
+    if (a === null) return '—';
+    return this.savingMetric() === 'eur' ? formatSignedEur(a) : formatPercent(a);
   }
 
   protected monthLabel(): string {
